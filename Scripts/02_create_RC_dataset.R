@@ -1,4 +1,5 @@
 # combine all data together into one dataset and define categorical variables
+library(tidyverse)
 
 # for now, reading in the dataset I've already created and adding in EEMs
 # but NEED to script in the creation of all of these pieces of data from the published EDI files
@@ -9,7 +10,7 @@ data$connectivity <- as.factor(data$connectivity)
 
 # define specifics for subsetting to RC days
 res <- c('FCR', 'BVR')
-sites <- c('01', '20', '30', '45', '50', '100', '200', '99', '101', '102')
+sites <- c('1', '20', '30', '45', '50', '100', '200', '99', '101', '102')
 dates <- c(as.Date("2019-04-29"), 
            as.Date("2019-05-30"),
            as.Date("2019-06-27"),
