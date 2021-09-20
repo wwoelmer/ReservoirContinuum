@@ -26,12 +26,16 @@ eems <- eems[eems$Site %in% sites,]
 eems <- eems[eems$Reservoir %in% res,]
 eems <- eems[eems$DateTime %in% dates,]
 eems <- eems %>% 
-  select(Reservoir:DateTime, A, T, HIX, BIX) %>%
+  select(Reservoir:DateTime, Rep, Dilution, A, T, HIX, BIX) %>%
   group_by(Reservoir, Site, DateTime) 
 eems <- na.omit(eems)
+eems <- eems %>% 
+  mutate(id = paste0(Reservoir, Site, DateTime)) %>% 
+  distinct(id, .keep_all = TRUE)
+
+
 colnames(eems)[3] <- 'Date'
 
 data <- left_join(data, eems)
-# why some NAs in EEMs data?
 
 write.csv(data, './Data/continuum_ww.csv', row.names = FALSE)
