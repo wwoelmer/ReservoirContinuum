@@ -4,7 +4,7 @@ library(lubridate)
 library(EnvStats)
 
 #data <- read.csv('./Data/continuum_pf.csv')
-data <- read.csv('./Data/continuum_ww.csv')
+data <-read.csv('./Data/continuum_ww.csv')
 data$Date <- as.Date(data$DateTime)
 data$connectivity <- as.factor(data$connectivity)
 
@@ -151,6 +151,47 @@ hb <- ggplot(data = data[data$Reservoir=='BVR',], aes(x = distance_from_stream, 
 hb
 hf
 
+
+summ <- data %>% 
+  group_by(Site) %>% 
+  mutate(TN_mean = mean(TN_ugL, na.rm = TRUE),
+         TP_mean = mean(TP_ugL, na.rm = TRUE),
+         NH4_mean = mean(NH4_ugL, na.rm = TRUE),
+         NO3_mean = mean(NO3NO2_ugL, na.rm = TRUE),
+         SRP_mean = mean(SRP_ugL, na.rm = TRUE),
+         DOC_mean = mean(DOC_mgL, na.rm = TRUE),
+         Chl_mean = mean(Chla_ugL, na.rm = TRUE),
+         A_mean = mean(A, na.rm = TRUE),
+         T_mean = mean(T, na.rm = TRUE)) %>% 
+  distinct(res_site, .keep_all = TRUE) %>% 
+  select(Site, Reservoir, distance_from_stream, TN_mean:T_mean) %>% 
+  pivot_longer(TN_mean:T_mean, names_to = 'variable', values_to = 'value')
+
+ggplot(data = summ, aes(x = distance_from_stream, y = value, col = as.factor(Reservoir))) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~variable, scales = "free") + 
+  scale_color_manual(values = c('royalblue1', 'olivedrab4')) + 
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+
+long <- data %>%   
+  select(Site, Reservoir, distance_from_stream, TN_ugL:Chla_ugL, A, T) %>% 
+  pivot_longer(TN_ugL:T, names_to = 'variable', values_to = 'value')
+
+ggplot(data = long, aes(x = distance_from_stream, y = value, col = as.factor(Reservoir))) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~variable, scales = "free") + 
+  scale_color_manual(values = c('royalblue1', 'olivedrab4')) + 
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+  
+  
+
 i <- ggplot(data = data, aes(x = distance_from_stream, y = TN_TP, col = Reservoir ))  +
   geom_point() +
   facet_wrap(~month(Date)) + 
@@ -200,7 +241,7 @@ n <- ggplot(data = data, aes(x = distance_from_stream, y = NO3NO2_ugL, col = Res
         strip.text = element_text(size = 14))
 
 png("./Figures/reservoir continuum/Continuum_longitudinal_nutrients.png", width = 1100, height = 800)
-(j + n + m)/(k + l + h )
+(j + n + m)/(k + l + i )
 dev.off()
 
 ######################################################################################################################
@@ -277,7 +318,7 @@ dev.off()
 
 # build regression model btw CV and month?
 # build regression model btw RT and month?
-rt <- read.csv('./Data/continuum_discharge/20201110_WRT.csv')
+rt <- read.csv('./Data/unscripted_files/20201110_WRT.csv')
 rt$Reservoir <- 'NA'
 for (i in 1:nrow(rt)) {
   if(rt$Site[i]=='299'){
@@ -291,54 +332,117 @@ rt$Date <- as.Date(rt$Date)
 CV <- left_join(CV, rt)
 
 # hard code in the Jun 20 WRT for BVR as the Jun 27 WRT (since this is the closest obs)
-CV[5,10] <- 861.73327 #value taken from rt dataset for 20 Jun 19 at BVR
+CV[5,13] <- 861.73327 #value taken from rt dataset for 20 Jun 19 at BVR
 CV$Notes <- 'NA'
-CV[5,11] <- 'WRT from 20 Jun 19'
+CV[5,14] <- 'WRT from 20 Jun 19'
 
-chl_rt <- ggplot(data = CV, aes(x = wrt_d, y = CV_chl, col = Reservoir)) + geom_line() +
+chl_rt <- ggplot(data = CV, aes(x = wrt_d, y = CV_chl)) + geom_point(aes(col = Reservoir)) +
+  geom_smooth(method = 'lm', se = FALSE, col = 'black') +
+  theme(legend.position = 'none',
+        axis.text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+        strip.text = element_text(size = 18)) +
+  stat_regline_equation(label.y =.400, aes(label = ..eq.label..)) +
+  stat_regline_equation(label.y = .350, aes(label = ..rr.label..))
+chl_rt
+
+srp_rt <- ggplot(data = CV, aes(x = wrt_d, y = CV_SRP)) + geom_point(aes(col = Reservoir)) +
+  geom_smooth(method = 'lm', se = FALSE, col = 'black') +
+  theme(legend.position = 'none',
+        axis.text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+        strip.text = element_text(size = 18)) +
+  stat_regline_equation(label.y = 1.4, aes(label = ..eq.label..)) +
+  stat_regline_equation(label.y = 1.2, aes(label = ..rr.label..))
+srp_rt
+
+no3_rt <- ggplot(data = CV, aes(x = wrt_d, y = CV_NO3)) + geom_point(aes(col = Reservoir)) +
+  geom_smooth(method = 'lm', se = FALSE, col = 'black') +
+  theme(legend.position = 'none',
+        axis.text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+        strip.text = element_text(size = 18)) +
+  stat_regline_equation(label.y = 1.8, aes(label = ..eq.label..)) +
+  stat_regline_equation(label.y = 1.6, aes(label = ..rr.label..))
+no3_rt
+
+nh4_rt <- ggplot(data = CV, aes(x = wrt_d, y = CV_NH4)) + geom_point(aes(col = Reservoir)) +
+  geom_smooth(method = 'lm', se = FALSE, col = 'black') +
+  theme(legend.position = 'none',
+        axis.text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+        strip.text = element_text(size = 18)) +
+  stat_regline_equation(label.y = 1, aes(label = ..eq.label..)) +
+  stat_regline_equation(label.y = 0.9, aes(label = ..rr.label..))
+nh4_rt
+
+tp_rt <- ggplot(data = CV, aes(x = wrt_d, y = CV_TP)) + geom_point(aes(col = Reservoir)) +
+  geom_smooth(method = 'lm', se = FALSE, col = 'black') +
+  theme(legend.position = 'none',
+        axis.text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+        strip.text = element_text(size = 18)) +
+  stat_regline_equation(label.y = .42, aes(label = ..eq.label..)) +
+  stat_regline_equation(label.y = .4, aes(label = ..rr.label..))
+tp_rt
+
+tn_rt <- ggplot(data = CV, aes(x = wrt_d, y = CV_TN)) + geom_point(aes(col = Reservoir)) +
+  geom_smooth(method = 'lm', se = FALSE, col = 'black') +
+  theme(legend.position = 'none',
+        axis.text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+        strip.text = element_text(size = 18)) +
+  stat_regline_equation(label.y = 0.5, aes(label = ..eq.label..)) +
+  stat_regline_equation(label.y = 0.45, aes(label = ..rr.label..))
+tn_rt
+
+tntp_rt <- ggplot(data = CV, aes(x = wrt_d, y = CV_TNTP)) + geom_point(aes(col = Reservoir)) +
+  geom_smooth(method = 'lm', se = FALSE, col = 'black') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 18),
         axis.title = element_text(size = 18),
         strip.text = element_text(size = 18))
-srp_rt <- ggplot(data = CV, aes(x = wrt_d, y = CV_SRP, col = Reservoir)) + geom_line() +
+tntp_rt
+
+apeak_rt <- ggplot(data = CV, aes(x = wrt_d, y = CV_A)) + geom_point(aes(col = Reservoir)) +
+  geom_smooth(method = 'lm', se = FALSE, col = 'black') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 18),
         axis.title = element_text(size = 18),
-        strip.text = element_text(size = 18))
-no3_rt <- ggplot(data = CV, aes(x = wrt_d, y = CV_NO3, col = Reservoir)) + geom_line() +
+        strip.text = element_text(size = 18)) +
+  stat_regline_equation(label.y = 0.2, aes(label = ..eq.label..)) +
+  stat_regline_equation(label.y = 0.175, aes(label = ..rr.label..))
+apeak_rt
+
+tpeak_rt <- ggplot(data = CV, aes(x = wrt_d, y = CV_T)) + geom_point(aes(col = Reservoir)) +
+  geom_smooth(method = 'lm', se = FALSE, col = 'black') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 18),
         axis.title = element_text(size = 18),
-        strip.text = element_text(size = 18))
-nh4_rt <- ggplot(data = CV, aes(x = wrt_d, y = CV_NH4, col = Reservoir)) + geom_line() +
+        strip.text = element_text(size = 18)) +
+  stat_regline_equation(label.y = .400, aes(label = ..eq.label..)) +
+  stat_regline_equation(label.y = .350, aes(label = ..rr.label..))
+tpeak_rt
+
+doc_rt <- ggplot(data = CV, aes(x = wrt_d, y = CV_DOC)) + geom_point(aes(col = Reservoir)) +
+  geom_smooth(method = 'lm', se = FALSE, col = 'black') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 18),
         axis.title = element_text(size = 18),
-        strip.text = element_text(size = 18)) 
-tp_rt <- ggplot(data = CV, aes(x = wrt_d, y = CV_TP, col = Reservoir)) + geom_line() +
-  theme(legend.position = 'none',
-        axis.text = element_text(size = 18),
-        axis.title = element_text(size = 18),
-        strip.text = element_text(size = 18))
-tn_rt <- ggplot(data = CV, aes(x = wrt_d, y = CV_TN, col = Reservoir)) + geom_line() +
-  theme(legend.position = 'none',
-        axis.text = element_text(size = 18),
-        axis.title = element_text(size = 18),
-        strip.text = element_text(size = 18))
-tntp_rt <- ggplot(data = CV, aes(x = wrt_d, y = CV_TNTP, col = Reservoir)) + geom_line() +
-  theme(legend.position = 'none',
-        axis.text = element_text(size = 18),
-        axis.title = element_text(size = 18),
-        strip.text = element_text(size = 18))
-png("./Figures/reservoir continuum/WRT_vs_CV.png", width = 1100, height = 800)
-(tn_rt + no3_rt + nh4_rt)/(tp_rt + srp_rt + chl_rt) 
+        strip.text = element_text(size = 18)) +
+  stat_regline_equation(label.y = 0.400, aes(label = ..eq.label..)) +
+  stat_regline_equation(label.y = 0.350, aes(label = ..rr.label..))
+doc_rt
+
+png("./Figures/WRT_vs_CV.png", width = 1100, height = 800)
+(apeak_rt + chl_rt + doc_rt)/(nh4_rt + no3_rt + srp_rt)/(tpeak_rt + tn_rt + tp_rt)
 dev.off()
 
 #####################################################################################
 # calculate synchrony between FCR and BVR (pearson correlation coefficient)
 data_bvr <- data[data$Reservoir=='BVR' & data$Site %in% in_reservoir,]
 data_fcr <- data[data$Reservoir=='FCR' & data$Site %in% in_reservoir,]
-cor_pearson <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP'),
+cor_pearson <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP', 'A_peak', 'T_peak'),
                           'pearson_r' = rep(NA))
 
 # correlations between all sites at BVR vs FCR
@@ -363,7 +467,7 @@ dev.off()
 # now do this individually for each site pairing
 #########################
 # f20 and b20
-cor_pearson_f20_b20 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP'),
+cor_pearson_f20_b20 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP', 'A_peak', 'T_peak'),
                           'pearson_r' = rep(NA))
 
 
@@ -378,18 +482,22 @@ cor_pearson_f20_b20[4, 2] <- cor(fcr_20$TP_ugL,     bvr_20$TP_ugL, use = 'comple
 cor_pearson_f20_b20[7, 2] <- cor(fcr_20$TN_TP,      bvr_20$TN_TP, use = 'complete.obs')
 cor_pearson_f20_b20[8, 2] <- cor(fcr_20$DN_TN,      bvr_20$DN_TN, use = 'complete.obs')
 cor_pearson_f20_b20[9, 2] <- cor(fcr_20$DP_TP,      bvr_20$DP_TP, use = 'complete.obs')
+cor_pearson_f20_b20[10, 2] <- cor(fcr_20$A,      bvr_20$A, use = 'complete.obs')
+cor_pearson_f20_b20[11, 2] <- cor(fcr_20$T,      bvr_20$T, use = 'complete.obs')
+
 f20b20 <- ggplot(data = cor_pearson_f20_b20, aes(x = variable, y = pearson_r, fill = pearson_r > 0.5)) + geom_bar(stat = 'identity') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 20),
         axis.title = element_text(size = 35),
         strip.text = element_text(size = 35),
-        plot.title = element_text(size = 40)) +
+        plot.title = element_text(size = 40),
+        axis.text.x = element_text(angle = 45)) +
   ggtitle('F20 and B20')+
   scale_fill_manual('Above 0.5', values = c('gray45', 'coral')) 
 
 #################
 # f20 and b30
-cor_pearson_f20_b30 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP'),
+cor_pearson_f20_b30 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP', 'A_peak', 'T_peak'),
                                   'pearson_r' = rep(NA))
 
 
@@ -404,44 +512,23 @@ cor_pearson_f20_b30[4, 2] <- cor(fcr_20$TP_ugL,     bvr_30$TP_ugL, use = 'comple
 cor_pearson_f20_b30[7, 2] <- cor(fcr_20$TN_TP,      bvr_30$TN_TP, use = 'complete.obs')
 cor_pearson_f20_b30[8, 2] <- cor(fcr_20$DN_TN,      bvr_30$DN_TN, use = 'complete.obs')
 cor_pearson_f20_b30[9, 2] <- cor(fcr_20$DP_TP,      bvr_30$DP_TP, use = 'complete.obs')
+cor_pearson_f20_b30[10, 2] <- cor(fcr_20$A,      bvr_30$A, use = 'complete.obs')
+cor_pearson_f20_b30[11, 2] <- cor(fcr_20$T,      bvr_30$T, use = 'complete.obs')
+
 f20b30 <- ggplot(data = cor_pearson_f20_b30, aes(x = variable, y = pearson_r, fill = pearson_r > 0.5)) + geom_bar(stat = 'identity') +
   theme(legend.position = 'none', 
         axis.text = element_text(size = 20),
         axis.title = element_text(size = 35),
         strip.text = element_text(size = 35),
-        plot.title = element_text(size = 40)) +
+        plot.title = element_text(size = 40),
+        axis.text.x = element_text(angle = 45)) +
   ggtitle('F20 and B30')+
   scale_fill_manual('Above 0.5', values = c('gray45', 'coral')) 
-
-#################
-# f20 and b30
-cor_pearson_f20_b30 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP'),
-                                  'pearson_r' = rep(NA))
-
-
-bvr_30 <- data_bvr[data_bvr$Site=='30',]
-fcr_20 <- data_fcr[data_fcr$Site=='20',]
-cor_pearson_f20_b30[6, 2] <- cor(fcr_20$Chla_ugL,   bvr_30$Chla_ugL)
-cor_pearson_f20_b30[5, 2] <- cor(fcr_20$SRP_ugL,    bvr_30$SRP_ugL)
-cor_pearson_f20_b30[2, 2] <- cor(fcr_20$NO3NO2_ugL, bvr_30$NO3NO2_ugL)
-cor_pearson_f20_b30[3, 2] <- cor(fcr_20$NH4_ugL,    bvr_30$NH4_ugL, use = 'complete.obs')
-cor_pearson_f20_b30[1, 2] <- cor(fcr_20$TN_ugL,     bvr_30$TN_ugL, use = 'complete.obs')
-cor_pearson_f20_b30[4, 2] <- cor(fcr_20$TP_ugL,     bvr_30$TP_ugL, use = 'complete.obs')
-cor_pearson_f20_b30[7, 2] <- cor(fcr_20$TN_TP,      bvr_30$TN_TP, use = 'complete.obs')
-cor_pearson_f20_b30[8, 2] <- cor(fcr_20$DN_TN,      bvr_30$DN_TN, use = 'complete.obs')
-cor_pearson_f20_b30[9, 2] <- cor(fcr_20$DP_TP,      bvr_30$DP_TP, use = 'complete.obs')
-f20b30 <- ggplot(data = cor_pearson_f20_b30, aes(x = variable, y = pearson_r, fill = pearson_r > 0.5)) + geom_bar(stat = 'identity') +
-  theme(legend.position = 'none',
-        axis.text = element_text(size = 20),
-        axis.title = element_text(size = 35),
-        strip.text = element_text(size = 35),
-        plot.title = element_text(size = 40)) +
-  ggtitle('F20 and B30')+
-  scale_fill_manual('Above 0.5', values = c('gray45', 'coral')) 
+f20b30
 
 #################
 # f30 and b20
-cor_pearson_f30_b20 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP'),
+cor_pearson_f30_b20 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP', 'A_peak', 'T_peak'),
                                   'pearson_r' = rep(NA))
 
 
@@ -456,6 +543,9 @@ cor_pearson_f30_b20[4, 2] <- cor(fcr_30$TP_ugL,     bvr_20$TP_ugL, use = 'comple
 cor_pearson_f30_b20[7, 2] <- cor(fcr_30$TN_TP,      bvr_20$TN_TP, use = 'complete.obs')
 cor_pearson_f30_b20[8, 2] <- cor(fcr_30$DN_TN,      bvr_20$DN_TN, use = 'complete.obs')
 cor_pearson_f30_b20[9, 2] <- cor(fcr_30$DP_TP,      bvr_20$DP_TP, use = 'complete.obs')
+cor_pearson_f30_b20[10, 2] <- cor(fcr_30$A,      bvr_20$A, use = 'complete.obs')
+cor_pearson_f30_b20[11, 2] <- cor(fcr_30$T,      bvr_20$T, use = 'complete.obs')
+
 f30b20 <- ggplot(data = cor_pearson_f30_b20, aes(x = variable, y = pearson_r, fill = pearson_r > 0.5)) + geom_bar(stat = 'identity') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 20),
@@ -464,10 +554,10 @@ f30b20 <- ggplot(data = cor_pearson_f30_b20, aes(x = variable, y = pearson_r, fi
         plot.title = element_text(size = 40)) +
   ggtitle('F30 and B20')+
   scale_fill_manual('Above 0.5', values = c('gray45', 'coral')) 
-
+f30b20
 #################
 # f30 and b30
-cor_pearson_f30_b30 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP'),
+cor_pearson_f30_b30 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP', 'A_peak', 'T_peak'),
                                   'pearson_r' = rep(NA))
 
 
@@ -482,6 +572,9 @@ cor_pearson_f30_b30[4, 2] <- cor(fcr_30$TP_ugL,     bvr_30$TP_ugL, use = 'comple
 cor_pearson_f30_b30[7, 2] <- cor(fcr_30$TN_TP,      bvr_30$TN_TP, use = 'complete.obs')
 cor_pearson_f30_b30[8, 2] <- cor(fcr_30$DN_TN,      bvr_30$DN_TN, use = 'complete.obs')
 cor_pearson_f30_b30[9, 2] <- cor(fcr_30$DP_TP,      bvr_30$DP_TP, use = 'complete.obs')
+cor_pearson_f30_b30[10, 2] <- cor(fcr_30$A,      bvr_30$A, use = 'complete.obs')
+cor_pearson_f30_b30[11, 2] <- cor(fcr_30$T,      bvr_30$T, use = 'complete.obs')
+
 f30b30 <- ggplot(data = cor_pearson_f30_b30, aes(x = variable, y = pearson_r, fill = pearson_r > 0.5)) + geom_bar(stat = 'identity') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 20),
@@ -490,10 +583,10 @@ f30b30 <- ggplot(data = cor_pearson_f30_b30, aes(x = variable, y = pearson_r, fi
         plot.title = element_text(size = 40)) +
   ggtitle('F30 and B30')+
   scale_fill_manual('Above 0.5', values = c('gray45', 'coral')) 
-
+f30b30
 #################
 # f45 and b45
-cor_pearson_f45_b45 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP'),
+cor_pearson_f45_b45 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP', 'A_peak', 'T_peak'),
                                   'pearson_r' = rep(NA))
 
 
@@ -508,6 +601,9 @@ cor_pearson_f45_b45[4, 2] <- cor(fcr_45$TP_ugL,     bvr_45$TP_ugL, use = 'comple
 cor_pearson_f45_b45[7, 2] <- cor(fcr_45$TN_TP,      bvr_45$TN_TP, use = 'complete.obs')
 cor_pearson_f45_b45[8, 2] <- cor(fcr_45$DN_TN,      bvr_45$DN_TN, use = 'complete.obs')
 cor_pearson_f45_b45[9, 2] <- cor(fcr_45$DP_TP,      bvr_45$DP_TP, use = 'complete.obs')
+cor_pearson_f45_b45[10, 2] <- cor(fcr_45$A,      bvr_45$A, use = 'complete.obs')
+cor_pearson_f45_b45[11, 2] <- cor(fcr_45$T,      bvr_45$T, use = 'complete.obs')
+
 f45b45 <- ggplot(data = cor_pearson_f45_b45, aes(x = variable, y = pearson_r, fill = pearson_r > 0.5)) + geom_bar(stat = 'identity') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 20),
@@ -516,10 +612,10 @@ f45b45 <- ggplot(data = cor_pearson_f45_b45, aes(x = variable, y = pearson_r, fi
         plot.title = element_text(size = 40)) +
   ggtitle('F45 and B45')+
   scale_fill_manual('Above 0.5', values = c('gray45', 'coral')) 
-
+f45b45 
 #################
 # f45 and b01
-cor_pearson_f45_b01 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP'),
+cor_pearson_f45_b01 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP', 'A_peak', 'T_peak'),
                                   'pearson_r' = rep(NA))
 
 
@@ -534,6 +630,9 @@ cor_pearson_f45_b01[4, 2] <- cor(fcr_45$TP_ugL,     bvr_01$TP_ugL, use = 'comple
 cor_pearson_f45_b01[7, 2] <- cor(fcr_45$TN_TP,      bvr_01$TN_TP, use = 'complete.obs')
 cor_pearson_f45_b01[8, 2] <- cor(fcr_45$DN_TN,      bvr_01$DN_TN, use = 'complete.obs')
 cor_pearson_f45_b01[9, 2] <- cor(fcr_45$DP_TP,      bvr_01$DP_TP, use = 'complete.obs')
+cor_pearson_f45_b01[10, 2] <- cor(fcr_45$A,      bvr_01$A, use = 'complete.obs')
+cor_pearson_f45_b01[11, 2] <- cor(fcr_45$T,      bvr_01$T, use = 'complete.obs')
+
 f45b01 <- ggplot(data = cor_pearson_f45_b01, aes(x = variable, y = pearson_r, fill = pearson_r > 0.5)) + geom_bar(stat = 'identity') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 20),
@@ -542,15 +641,24 @@ f45b01 <- ggplot(data = cor_pearson_f45_b01, aes(x = variable, y = pearson_r, fi
         plot.title = element_text(size = 40)) +
   ggtitle('F45 and B01')+
   scale_fill_manual('Above 0.5', values = c('gray45', 'coral')) 
-
+f45b01
 #################
 # f50 and b50
-cor_pearson_f50_b50 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP'),
+cor_pearson_f50_b50 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP', 'A_peak', 'T_peak'),
                                   'pearson_r' = rep(NA))
 
 
 bvr_50 <- data_bvr[data_bvr$Site=='50',]
 fcr_50 <- data_fcr[data_fcr$Site=='50',]
+dates <- c(as.Date("2019-04-29"), 
+           as.Date("2019-05-30"),
+           as.Date("2019-06-27"),
+           as.Date("2019-07-18"),
+           as.Date("2019-08-22"),
+           as.Date("2019-09-20"),
+           as.Date("2019-10-04"))
+fcr_50 <- fcr_50[fcr_50$Date %in% dates,]
+
 cor_pearson_f50_b50[6, 2] <- cor(fcr_50$Chla_ugL,   bvr_50$Chla_ugL)
 cor_pearson_f50_b50[5, 2] <- cor(fcr_50$SRP_ugL,    bvr_50$SRP_ugL)
 cor_pearson_f50_b50[2, 2] <- cor(fcr_50$NO3NO2_ugL, bvr_50$NO3NO2_ugL)
@@ -583,7 +691,7 @@ dev.off()
 # use SPEARMAN correlation instead
 data_bvr <- data[data$Reservoir=='BVR' & data$Site %in% in_reservoir,]
 data_fcr <- data[data$Reservoir=='FCR' & data$Site %in% in_reservoir,]
-cor_spearman <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP'),
+cor_spearman <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP', 'A_peak', 'T_peak'),
                           'spearman_r' = rep(NA))
 
 # correlations between all sites at BVR vs FCR
@@ -597,18 +705,20 @@ cor_spearman[7, 2] <- cor(data_fcr$TN_TP, data_bvr$TN_TP, use = 'complete.obs', 
 cor_spearman[8, 2] <- cor(data_fcr$DN_TN, data_bvr$DN_TN, use = 'complete.obs', method = 'spearman')
 cor_spearman[9, 2] <- cor(data_fcr$DP_TP, data_bvr$DP_TP, use = 'complete.obs', method = 'spearman')
 
-png("./Figures/reservoir continuum/Spearman_r.png", width = 1200, height = 1100)
+png("./Figures/Spearman_all_sites.png", width = 1200, height = 1100)
 ggplot(data = cor_spearman, aes(x = variable, y = spearman_r, fill = spearman_r > 0.5)) + geom_bar(stat = 'identity') +
   theme(axis.text = element_text(size = 35),
         axis.title = element_text(size = 35),
-        strip.text = element_text(size = 35)) +
-  scale_fill_manual('Above 0.5', values = c('gray45', 'cornflowerblue')) 
+        strip.text = element_text(size = 35),
+        axis.text.x = element_text(angle = 45),
+        axis.text.x = element_text(angle = 45)) +
+  scale_fill_manual('Above 0.5', values = c('gray45', 'darkorchid4')) 
 dev.off()
 
 # now do this individually for each site pairing
 #########################
 # f20 and b20
-cor_spearman_f20_b20 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP'),
+cor_spearman_f20_b20 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP', 'A_peak', 'T_peak'),
                                   'spearman_r' = rep(NA))
 
 
@@ -623,18 +733,23 @@ cor_spearman_f20_b20[4, 2] <- cor(fcr_20$TP_ugL,     bvr_20$TP_ugL, use = 'compl
 cor_spearman_f20_b20[7, 2] <- cor(fcr_20$TN_TP,      bvr_20$TN_TP, use = 'complete.obs', method = 'spearman')
 cor_spearman_f20_b20[8, 2] <- cor(fcr_20$DN_TN,      bvr_20$DN_TN, use = 'complete.obs', method = 'spearman')
 cor_spearman_f20_b20[9, 2] <- cor(fcr_20$DP_TP,      bvr_20$DP_TP, use = 'complete.obs', method = 'spearman')
+cor_spearman_f20_b20[10, 2] <- cor(fcr_20$A,      bvr_20$A, use = 'complete.obs', method = 'spearman')
+cor_spearman_f20_b20[11, 2] <- cor(fcr_20$T,      bvr_20$T, use = 'complete.obs', method = 'spearman')
+
+
 f20b20 <- ggplot(data = cor_spearman_f20_b20, aes(x = variable, y = spearman_r, fill = spearman_r > 0.5)) + geom_bar(stat = 'identity') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 20),
         axis.title = element_text(size = 35),
         strip.text = element_text(size = 35),
-        plot.title = element_text(size = 40)) +
+        plot.title = element_text(size = 40),
+        axis.text.x = element_text(angle = 45)) +
   ggtitle('F20 and B20')+
-  scale_fill_manual('Above 0.5', values = c('gray45', 'cornflowerblue')) 
+  scale_fill_manual('Above 0.5', values = c('gray45', 'darkorchid4')) 
 
 #################
 # f20 and b30
-cor_spearman_f20_b30 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP'),
+cor_spearman_f20_b30 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP', "A_peak", "T_peak"),
                                   'pearson_r' = rep(NA))
 
 
@@ -649,18 +764,22 @@ cor_spearman_f20_b30[4, 2] <- cor(fcr_20$TP_ugL,     bvr_30$TP_ugL, use = 'compl
 cor_spearman_f20_b30[7, 2] <- cor(fcr_20$TN_TP,      bvr_30$TN_TP, use = 'complete.obs', method = 'spearman')
 cor_spearman_f20_b30[8, 2] <- cor(fcr_20$DN_TN,      bvr_30$DN_TN, use = 'complete.obs', method = 'spearman')
 cor_spearman_f20_b30[9, 2] <- cor(fcr_20$DP_TP,      bvr_30$DP_TP, use = 'complete.obs', method = 'spearman')
+cor_spearman_f20_b30[10, 2] <- cor(fcr_20$A,      bvr_30$A, use = 'complete.obs', method = 'spearman')
+cor_spearman_f20_b30[11, 2] <- cor(fcr_20$T,      bvr_30$T, use = 'complete.obs', method = 'spearman')
+
 f20b30 <- ggplot(data = cor_spearman_f20_b30, aes(x = variable, y = spearman_r, fill = spearman_r > 0.5)) + geom_bar(stat = 'identity') +
   theme(legend.position = 'none', 
         axis.text = element_text(size = 20),
         axis.title = element_text(size = 35),
         strip.text = element_text(size = 35),
-        plot.title = element_text(size = 40)) +
+        plot.title = element_text(size = 40),
+        axis.text.x = element_text(angle = 45)) +
   ggtitle('F20 and B30')+
-  scale_fill_manual('Above 0.5', values = c('gray45', 'cornflowerblue')) 
+  scale_fill_manual('Above 0.5', values = c('gray45', 'darkorchid4')) 
 
 #################
 # f20 and b30
-cor_spearman_b30_f30 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP'),
+cor_spearman_f20_b30 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP', 'A_peak', 'T_peak'),
                                   'spearman_r' = rep(NA))
 
 
@@ -675,18 +794,22 @@ cor_spearman_f20_b30[4, 2] <- cor(fcr_20$TP_ugL,     bvr_30$TP_ugL, use = 'compl
 cor_spearman_f20_b30[7, 2] <- cor(fcr_20$TN_TP,      bvr_30$TN_TP, use = 'complete.obs', method = 'spearman')
 cor_spearman_f20_b30[8, 2] <- cor(fcr_20$DN_TN,      bvr_30$DN_TN, use = 'complete.obs', method = 'spearman')
 cor_spearman_f20_b30[9, 2] <- cor(fcr_20$DP_TP,      bvr_30$DP_TP, use = 'complete.obs', method = 'spearman')
+cor_spearman_f20_b30[10, 2] <- cor(fcr_20$A,      bvr_30$A, use = 'complete.obs', method = 'spearman')
+cor_spearman_f20_b30[11, 2] <- cor(fcr_20$T,      bvr_30$T, use = 'complete.obs', method = 'spearman')
+
 f20b30 <- ggplot(data = cor_spearman_f20_b30, aes(x = variable, y = spearman_r, fill = spearman_r > 0.5)) + geom_bar(stat = 'identity') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 20),
         axis.title = element_text(size = 35),
         strip.text = element_text(size = 35),
-        plot.title = element_text(size = 40)) +
+        plot.title = element_text(size = 40),
+        axis.text.x = element_text(angle = 45)) +
   ggtitle('F20 and B30')+
-  scale_fill_manual('Above 0.5', values = c('gray45', 'cornflowerblue')) 
+  scale_fill_manual('Above 0.5', values = c('gray45', 'darkorchid4')) 
 
 #################
 # f30 and b20
-cor_spearman_f30_b20 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP'),
+cor_spearman_f30_b20 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP', 'A_peak', 'T_peak'),
                                   'spearman_r' = rep(NA))
 
 
@@ -701,44 +824,52 @@ cor_spearman_f30_b20[4, 2] <- cor(fcr_30$TP_ugL,     bvr_20$TP_ugL, use = 'compl
 cor_spearman_f30_b20[7, 2] <- cor(fcr_30$TN_TP,      bvr_20$TN_TP, use = 'complete.obs', method = 'spearman')
 cor_spearman_f30_b20[8, 2] <- cor(fcr_30$DN_TN,      bvr_20$DN_TN, use = 'complete.obs', method = 'spearman')
 cor_spearman_f30_b20[9, 2] <- cor(fcr_30$DP_TP,      bvr_20$DP_TP, use = 'complete.obs', method = 'spearman')
+cor_spearman_f30_b20[10, 2] <- cor(fcr_30$A,      bvr_20$A, use = 'complete.obs', method = 'spearman')
+cor_spearman_f30_b20[11, 2] <- cor(fcr_30$T,      bvr_20$T, use = 'complete.obs', method = 'spearman')
+
 f30b20 <- ggplot(data = cor_spearman_f30_b20, aes(x = variable, y = spearman_r, fill = spearman_r > 0.5)) + geom_bar(stat = 'identity') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 20),
         axis.title = element_text(size = 35),
         strip.text = element_text(size = 35),
-        plot.title = element_text(size = 40)) +
+        plot.title = element_text(size = 40),
+        axis.text.x = element_text(angle = 45)) +
   ggtitle('F30 and B20')+
-  scale_fill_manual('Above 0.5', values = c('gray45', 'cornflowerblue')) 
+  scale_fill_manual('Above 0.5', values = c('gray45', 'darkorchid4')) 
 
 #################
-# f30 and b30
-cor_spearman_f30_b30 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP'),
+# f30 and b45
+cor_spearman_f30_b45 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP', 'A_peak', 'T_peak'),
                                   'spearman_r' = rep(NA))
 
 
-bvr_30 <- data_bvr[data_bvr$Site=='30',]
+bvr_45 <- data_bvr[data_bvr$Site=='45',]
 fcr_30 <- data_fcr[data_fcr$Site=='30',]
-cor_spearman_f30_b30[6, 2] <- cor(fcr_30$Chla_ugL,   bvr_30$Chla_ugL, method = 'spearman')
-cor_spearman_f30_b30[5, 2] <- cor(fcr_30$SRP_ugL,    bvr_30$SRP_ugL, method = 'spearman')
-cor_spearman_f30_b30[2, 2] <- cor(fcr_30$NO3NO2_ugL, bvr_30$NO3NO2_ugL, method = 'spearman')
-cor_spearman_f30_b30[3, 2] <- cor(fcr_30$NH4_ugL,    bvr_30$NH4_ugL, use = 'complete.obs', method = 'spearman')
-cor_spearman_f30_b30[1, 2] <- cor(fcr_30$TN_ugL,     bvr_30$TN_ugL, use = 'complete.obs', method = 'spearman')
-cor_spearman_f30_b30[4, 2] <- cor(fcr_30$TP_ugL,     bvr_30$TP_ugL, use = 'complete.obs', method = 'spearman')
-cor_spearman_f30_b30[7, 2] <- cor(fcr_30$TN_TP,      bvr_30$TN_TP, use = 'complete.obs', method = 'spearman')
-cor_spearman_f30_b30[8, 2] <- cor(fcr_30$DN_TN,      bvr_30$DN_TN, use = 'complete.obs', method = 'spearman')
-cor_spearman_f30_b30[9, 2] <- cor(fcr_30$DP_TP,      bvr_30$DP_TP, use = 'complete.obs', method = 'spearman')
-f30b30 <- ggplot(data = cor_spearman_f30_b30, aes(x = variable, y = spearman_r, fill = spearman_r > 0.5)) + geom_bar(stat = 'identity') +
+cor_spearman_f30_b45[6, 2] <- cor(fcr_30$Chla_ugL,   bvr_45$Chla_ugL, method = 'spearman')
+cor_spearman_f30_b45[5, 2] <- cor(fcr_30$SRP_ugL,    bvr_45$SRP_ugL, method = 'spearman')
+cor_spearman_f30_b45[2, 2] <- cor(fcr_30$NO3NO2_ugL, bvr_45$NO3NO2_ugL, method = 'spearman')
+cor_spearman_f30_b45[3, 2] <- cor(fcr_30$NH4_ugL,    bvr_45$NH4_ugL, use = 'complete.obs', method = 'spearman')
+cor_spearman_f30_b45[1, 2] <- cor(fcr_30$TN_ugL,     bvr_45$TN_ugL, use = 'complete.obs', method = 'spearman')
+cor_spearman_f30_b45[4, 2] <- cor(fcr_30$TP_ugL,     bvr_45$TP_ugL, use = 'complete.obs', method = 'spearman')
+cor_spearman_f30_b45[7, 2] <- cor(fcr_30$TN_TP,      bvr_45$TN_TP, use = 'complete.obs', method = 'spearman')
+cor_spearman_f30_b45[8, 2] <- cor(fcr_30$DN_TN,      bvr_45$DN_TN, use = 'complete.obs', method = 'spearman')
+cor_spearman_f30_b45[9, 2] <- cor(fcr_30$DP_TP,      bvr_45$DP_TP, use = 'complete.obs', method = 'spearman')
+cor_spearman_f30_b45[10, 2] <- cor(fcr_30$A,      bvr_45$A, use = 'complete.obs', method = 'spearman')
+cor_spearman_f30_b45[11, 2] <- cor(fcr_30$T,      bvr_45$T, use = 'complete.obs', method = 'spearman')
+f30b45 <- ggplot(data = cor_spearman_f30_b45, aes(x = variable, y = spearman_r, fill = spearman_r > 0.5)) + geom_bar(stat = 'identity') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 20),
         axis.title = element_text(size = 35),
         strip.text = element_text(size = 35),
-        plot.title = element_text(size = 40)) +
-  ggtitle('F30 and B30')+
-  scale_fill_manual('Above 0.5', values = c('gray45', 'cornflowerblue')) 
+        plot.title = element_text(size = 40),
+        axis.text.x = element_text(angle = 45)) +
+  ggtitle('F30 and B45')+
+  scale_fill_manual('Above 0.5', values = c('gray45', 'darkorchid4')) 
+
 
 #################
 # f45 and b45
-cor_spearman_f45_b45 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP'),
+cor_spearman_f45_b45 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP', 'A_peak', 'T_peak'),
                                   'spearman_r' = rep(NA))
 
 
@@ -753,14 +884,48 @@ cor_spearman_f45_b45[4, 2] <- cor(fcr_45$TP_ugL,     bvr_45$TP_ugL, use = 'compl
 cor_spearman_f45_b45[7, 2] <- cor(fcr_45$TN_TP,      bvr_45$TN_TP, use = 'complete.obs', method = 'spearman')
 cor_spearman_f45_b45[8, 2] <- cor(fcr_45$DN_TN,      bvr_45$DN_TN, use = 'complete.obs', method = 'spearman')
 cor_spearman_f45_b45[9, 2] <- cor(fcr_45$DP_TP,      bvr_45$DP_TP, use = 'complete.obs', method = 'spearman')
+cor_spearman_f45_b45[10, 2] <- cor(fcr_45$A,      bvr_45$A, use = 'complete.obs', method = 'spearman')
+cor_spearman_f45_b45[11, 2] <- cor(fcr_45$T,      bvr_45$T, use = 'complete.obs', method = 'spearman')
+
 f45b45 <- ggplot(data = cor_spearman_f45_b45, aes(x = variable, y = spearman_r, fill = spearman_r > 0.5)) + geom_bar(stat = 'identity') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 20),
         axis.title = element_text(size = 35),
         strip.text = element_text(size = 35),
-        plot.title = element_text(size = 40)) +
+        plot.title = element_text(size = 40),
+        axis.text.x = element_text(angle = 45)) +
   ggtitle('F45 and B45')+
-  scale_fill_manual('Above 0.5', values = c('gray45', 'cornflowerblue')) 
+  scale_fill_manual('Above 0.5', values = c('gray45', 'darkorchid4')) 
+
+#################
+# f30 and b01
+cor_spearman_f30_b01 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP', 'A_peak', 'T_peak'),
+                                   'spearman_r' = rep(NA))
+
+
+bvr_01 <- data[data$res_site=='BVR_1',]
+fcr_30 <- data_fcr[data_fcr$Site=='30',]
+cor_spearman_f30_b01[6, 2] <- cor(fcr_30$Chla_ugL,   bvr_01$Chla_ugL, method = 'spearman')
+cor_spearman_f30_b01[5, 2] <- cor(fcr_30$SRP_ugL,    bvr_01$SRP_ugL, method = 'spearman')
+cor_spearman_f30_b01[2, 2] <- cor(fcr_30$NO3NO2_ugL, bvr_01$NO3NO2_ugL, method = 'spearman')
+cor_spearman_f30_b01[3, 2] <- cor(fcr_30$NH4_ugL,    bvr_01$NH4_ugL, use = 'complete.obs', method = 'spearman')
+cor_spearman_f30_b01[1, 2] <- cor(fcr_30$TN_ugL,     bvr_01$TN_ugL, use = 'complete.obs', method = 'spearman')
+cor_spearman_f30_b01[4, 2] <- cor(fcr_30$TP_ugL,     bvr_01$TP_ugL, use = 'complete.obs', method = 'spearman')
+cor_spearman_f30_b01[7, 2] <- cor(fcr_30$TN_TP,      bvr_01$TN_TP, use = 'complete.obs', method = 'spearman')
+cor_spearman_f30_b01[8, 2] <- cor(fcr_30$DN_TN,      bvr_01$DN_TN, use = 'complete.obs', method = 'spearman')
+cor_spearman_f30_b01[9, 2] <- cor(fcr_30$DP_TP,      bvr_01$DP_TP, use = 'complete.obs', method = 'spearman')
+cor_spearman_f30_b01[10, 2] <- cor(fcr_30$A,      bvr_01$A, use = 'complete.obs', method = 'spearman')
+cor_spearman_f30_b01[11, 2] <- cor(fcr_30$T,      bvr_01$T, use = 'complete.obs', method = 'spearman')
+
+f30b01 <- ggplot(data = cor_spearman_f30_b01, aes(x = variable, y = spearman_r, fill = spearman_r > 0.5)) + geom_bar(stat = 'identity') +
+  theme(legend.position = 'none',
+        axis.text = element_text(size = 20),
+        axis.title = element_text(size = 35),
+        strip.text = element_text(size = 35),
+        plot.title = element_text(size = 40),
+        axis.text.x = element_text(angle = 45)) +
+  ggtitle('F30 and B01')+
+  scale_fill_manual('Above 0.5', values = c('gray45', 'darkorchid4')) 
 
 #################
 # f45 and b01
@@ -784,13 +949,14 @@ f45b01 <- ggplot(data = cor_spearman_f45_b01, aes(x = variable, y = spearman_r, 
         axis.text = element_text(size = 20),
         axis.title = element_text(size = 35),
         strip.text = element_text(size = 35),
-        plot.title = element_text(size = 40)) +
+        plot.title = element_text(size = 40),
+        axis.text.x = element_text(angle = 45)) +
   ggtitle('F45 and B01')+
-  scale_fill_manual('Above 0.5', values = c('gray45', 'cornflowerblue')) 
+  scale_fill_manual('Above 0.5', values = c('gray45', 'darkorchid4')) 
 
 #################
 # f50 and b50
-cor_spearman_f50_b50 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP'),
+cor_spearman_f50_b50 <- data.frame('variable' = c('TN', 'NO3', 'NH4', 'TP', 'SRP', 'Chl-a', 'TNTP', 'DNTN', 'DPTP', 'A_peak', 'T_peak'),
                                   'spearman_r' = rep(NA))
 
 
@@ -805,16 +971,27 @@ cor_spearman_f50_b50[4, 2] <- cor(fcr_50$TP_ugL,     bvr_50$TP_ugL, use = 'compl
 cor_spearman_f50_b50[7, 2] <- cor(fcr_50$TN_TP,      bvr_50$TN_TP, use = 'complete.obs', method = 'spearman')
 cor_spearman_f50_b50[8, 2] <- cor(fcr_50$DN_TN,      bvr_50$DN_TN, use = 'complete.obs', method = 'spearman')
 cor_spearman_f50_b50[9, 2] <- cor(fcr_50$DP_TP,      bvr_50$DP_TP, use = 'complete.obs', method = 'spearman')
+cor_spearman_f50_b50[10, 2] <- cor(fcr_50$A,      bvr_50$A, use = 'complete.obs', method = 'spearman')
+cor_spearman_f50_b50[11, 2] <- cor(fcr_50$T,      bvr_50$T, use = 'complete.obs', method = 'spearman')
+
 f50b50 <- ggplot(data = cor_spearman_f50_b50, aes(x = variable, y = spearman_r, fill = spearman_r > 0.5)) + geom_bar(stat = 'identity') +
   theme(axis.text = element_text(size = 35),
         axis.title = element_text(size = 35),
         strip.text = element_text(size = 35),
-        plot.title = element_text(size = 40)) +
+        plot.title = element_text(size = 40),
+        axis.text.x = element_text(angle = 45)) +
   ggtitle('F50 and B50')+
-  scale_fill_manual('Above 0.5', values = c('gray45', 'cornflowerblue')) 
+  scale_fill_manual('Above 0.5', values = c('gray45', 'darkorchid4')) +
+  theme(legend.position = 'none',
+        axis.text = element_text(size = 20),
+        axis.title = element_text(size = 35),
+        strip.text = element_text(size = 35),
+        plot.title = element_text(size = 40)) 
 
-png("./Figures/reservoir continuum/Spearman_by_site.png", width = 1800, height = 1100)
-(f20b20 + f20b30 + f30b20 )/(f30b30 + f45b45 + f45b01)
+blank <- ggplot() + theme_void()
+
+png("./Figures/Spearman_by_site.png", width = 1100, height = 1100)
+(f20b20 + f20b30)/(f30b45 + f30b01)/(f50b50 + blank)
 dev.off()
 
 png("./Figures/reservoir continuum/Spearman_Site50.png", width = 1200, height = 1100)
