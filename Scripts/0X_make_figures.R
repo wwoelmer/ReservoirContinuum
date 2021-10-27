@@ -45,7 +45,7 @@ in_reservoir <- c( '20', '30', '45', '50') # site 01 is in res for BVR and in st
 in_stream <- c('99', '100', '101', '102', '200')
 
 ### read in distance data from arcgis
-dist <- read.csv('./Data/rc_coordinates.csv')
+dist <- read.csv('./Data/rc_coordinates_100only.csv')
 dist <- dist %>% select(Reservoir, Site, distance_m)
 
 data <- left_join(data, dist)
@@ -85,26 +85,42 @@ ggplot(data = summ, aes(x = distance_m, y = value, col = as.factor(Reservoir))) 
         panel.grid.minor = element_blank())
 
 long <- data %>%   
-  select(Site, Reservoir, Date, distance_from_stream, TN_ugL:Chla_ugL, A, T, distance_m) %>% 
-  pivot_longer(TN_ugL:T, names_to = 'variable', values_to = 'value')
+  select(Site, Reservoir, Date, distance_from_stream, TN_ugL:Chla_ugL, A:BIX, TN_TP:distance_m) %>% 
+  pivot_longer(TN_ugL:DN_TN, names_to = 'variable', values_to = 'value')
 
 
 levels <- c('A', 'T', 'DOC_mgL',
             'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
-            'TN_ugL', 'TP_ugL', 'Chla_ugL')
+            'TN_ugL', 'TP_ugL', 'Chla_ugL',
+            'HIX', 'BIX', 'TN_TP', 'DP_TP', 'DN_TN')
 labels <- c('Autoch', 'Alloch', 'DOC',
             'NH4', 'NO3', 'SRP',
-            'TN', 'TP', 'Chl-a')
+            'TN', 'TP', 'Chl-a',
+            'HIX', 'BIX', 'TN_TP', 'DP_TP', 'DN_TN')
 names(labels) <- levels
 long$variable <- factor(long$variable, levels = levels)
 
 ggplot(data = long[long$distance_from_stream > 0,], aes(x = distance_m, y = value)) +
-  geom_point(aes(col = as.factor(distance_from_stream), shape = as.factor(Reservoir))) +
+  geom_point(aes(col = as.factor(Reservoir))) +
   geom_smooth() +
   xlab('Distance from stream') +
   ylab('Concentration') +
   facet_wrap(~variable, scales = "free", labeller = labeller(variable = labels)) + 
-  #scale_color_manual(values = r_col) + 
+  scale_color_manual(values = r_col) + 
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        #   legend.position = "none"
+  )
+
+
+ggplot(data = long[long$distance_from_stream > 0,], aes(x = distance_from_stream, y = value)) +
+  geom_point(aes(col = distance_m, shape = as.factor(Reservoir))) +
+  geom_smooth() +
+  xlab('Distance from stream') +
+  ylab('Concentration') +
+  facet_wrap(~variable, scales = "free", labeller = labeller(variable = labels)) + 
+  scale_color_steps(low = 'red', high = 'blue') + 
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
@@ -371,3 +387,5 @@ p
 png("./Figures/WRT_vs_CV.png", width = 1100, height = 1100)
 p
 dev.off()
+
+
