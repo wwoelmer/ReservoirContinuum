@@ -194,7 +194,7 @@ ggplot(data = long, aes(x = distance_from_stream, y = value, col = as.factor(Res
 
 i <- ggplot(data = data, aes(x = distance_from_stream, y = TN_TP, col = Reservoir ))  +
   geom_point() +
-  facet_wrap(~month(Date)) + 
+  facet_wrap(~month(Date), scales = 'free') + 
   geom_smooth(method = 'lm')+
   theme(#legend.position = 'none',
         axis.text = element_text(size = 14),
@@ -202,7 +202,7 @@ i <- ggplot(data = data, aes(x = distance_from_stream, y = TN_TP, col = Reservoi
         strip.text = element_text(size = 14))
 j <- ggplot(data = data, aes(x = distance_from_stream, y = TN_ugL, col = Reservoir ))  +
   geom_point() +
-  facet_wrap(~month(Date)) + 
+  facet_wrap(~month(Date), scales = 'free') + 
   geom_smooth(method = 'lm') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 14),
@@ -210,7 +210,7 @@ j <- ggplot(data = data, aes(x = distance_from_stream, y = TN_ugL, col = Reservo
         strip.text = element_text(size = 14))
 k <- ggplot(data = data, aes(x = distance_from_stream, y = TP_ugL, col = Reservoir ))  +
   geom_point() +
-  facet_wrap(~month(Date)) + 
+  facet_wrap(~month(Date), scales = 'free') + 
   geom_smooth(method = 'lm') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 14),
@@ -218,7 +218,7 @@ k <- ggplot(data = data, aes(x = distance_from_stream, y = TP_ugL, col = Reservo
         strip.text = element_text(size = 14))
 l <- ggplot(data = data, aes(x = distance_from_stream, y = SRP_ugL, col = Reservoir ))  +
   geom_point() +
-  facet_wrap(~month(Date)) + 
+  facet_wrap(~month(Date), scales = 'free') + 
   geom_smooth(method = 'lm') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 14),
@@ -226,21 +226,21 @@ l <- ggplot(data = data, aes(x = distance_from_stream, y = SRP_ugL, col = Reserv
         strip.text = element_text(size = 14))
 m <- ggplot(data = data, aes(x = distance_from_stream, y = NH4_ugL, col = Reservoir ))  +
   geom_point() +
-  facet_wrap(~month(Date)) + 
+  facet_wrap(~month(Date), scales = 'free') + 
   geom_smooth(method = 'lm') +theme(legend.position = 'none',
                                     axis.text = element_text(size = 14),
                                     axis.title = element_text(size = 14),
                                     strip.text = element_text(size = 14))
 n <- ggplot(data = data, aes(x = distance_from_stream, y = NO3NO2_ugL, col = Reservoir ))  +
   geom_point() +
-  facet_wrap(~month(Date)) + 
+  facet_wrap(~month(Date), scales = 'free') + 
   geom_smooth(method = 'lm') +
   theme(legend.position = 'none',
         axis.text = element_text(size = 14),
         axis.title = element_text(size = 14),
         strip.text = element_text(size = 14))
 
-png("./Figures/reservoir continuum/Continuum_longitudinal_nutrients.png", width = 1100, height = 800)
+png("./Figures/Continuum_longitudinal_nutrients.png", width = 1100, height = 800)
 (j + n + m)/(k + l + i )
 dev.off()
 
