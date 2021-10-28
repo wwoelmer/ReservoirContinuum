@@ -113,6 +113,19 @@ ggplot(data = long[long$distance_from_stream > 0,], aes(x = distance_m, y = valu
         #   legend.position = "none"
   )
 
+# and with stream measurements
+ggplot(data = long, aes(x = distance_m, y = value)) +
+  geom_point(aes(col = as.factor(Reservoir))) +
+  geom_smooth() +
+  xlab('Distance from stream') +
+  ylab('Concentration') +
+  facet_wrap(~variable, scales = "free", labeller = labeller(variable = labels)) + 
+  scale_color_manual(values = r_col) + 
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        #   legend.position = "none"
+  )
 
 ggplot(data = long[long$distance_from_stream > 0,], aes(x = distance_from_stream, y = value)) +
   geom_point(aes(col = distance_m, shape = as.factor(Reservoir))) +
@@ -128,8 +141,8 @@ ggplot(data = long[long$distance_from_stream > 0,], aes(x = distance_from_stream
   )
 
 ggplot(data = long[long$Reservoir=='BVR' & long$distance_from_stream > 0,], aes(x = distance_m, y = value, col = as.factor(Date))) +
+  geom_smooth(aes(group = as.factor(Date))) +
   geom_point() +
-  geom_smooth() +
   xlab('Distance from stream') +
   ylab('Concentration') +
   facet_wrap(~variable, scales = "free", labeller = labeller(variable = labels)) + 
@@ -141,7 +154,7 @@ ggplot(data = long[long$Reservoir=='BVR' & long$distance_from_stream > 0,], aes(
         )
 ggplot(data = long[long$Reservoir=='FCR' & long$distance_from_stream > 0,], aes(x = distance_m, y = value, col = as.factor(Date))) +
   geom_point() +
-  geom_smooth() +
+  geom_smooth(aes(col = as.factor(Date))) +
   xlab('Distance from stream') +
   ylab('Concentration') +
   facet_wrap(~variable, scales = "free", labeller = labeller(variable = labels)) + 
@@ -153,7 +166,7 @@ ggplot(data = long[long$Reservoir=='FCR' & long$distance_from_stream > 0,], aes(
   )
 no_stream <- ggplot(data = long[long$distance_from_stream > 0,], aes(x = distance_from_stream, y = value, col = as.factor(Date))) +
   geom_point(size = 6, aes(shape = as.factor(Reservoir))) +
-  #geom_smooth() +
+  geom_smooth() +
   xlab('Distance from stream') +
   ylab('Concentration') +
   facet_wrap(~variable, scales = "free", labeller = labeller(variable = labels)) + 
@@ -169,7 +182,7 @@ no_stream
 
 with_stream <- ggplot(data = long, aes(x = distance_from_stream, y = value, col = as.factor(Date))) +
   geom_point(size = 6, aes(shape = as.factor(Reservoir))) +
-  #geom_smooth(aes(col = as.factor(Date))) +
+  geom_smooth(aes(col = as.factor(Date))) +
   xlab('Distance from stream') +
   ylab('Concentration') +
   #geom_violin() +
