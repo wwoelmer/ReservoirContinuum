@@ -55,14 +55,16 @@ long <- data %>%
   pivot_longer(TN_ugL:DN_TN, names_to = 'variable', values_to = 'value')
 
 
-levels <- c('A', 'T', 'DOC_mgL',
+levels <- c('T', 'A', 'HIX', 'BIX',
+            'DOC_mgL',
             'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
             'TN_ugL', 'TP_ugL', 'Chla_ugL',
-            'HIX', 'BIX', 'TN_TP', 'DP_TP', 'DN_TN')
-labels <- c('Autoch', 'Alloch', 'DOC',
+            'TN_TP', 'DP_TP', 'DN_TN')
+labels <- c('T-alloch', 'A-autoch', 'HIX-alloch', 'BIX-autoch',
+            'DOC',
             'NH4', 'NO3', 'SRP',
             'TN', 'TP', 'Chl-a',
-            'HIX', 'BIX', 'TN_TP', 'DP_TP', 'DN_TN')
+            'TN_TP', 'DP_TP', 'DN_TN')
 names(labels) <- levels
 long$variable <- factor(long$variable, levels = levels)
 
@@ -145,20 +147,33 @@ CV_time <- data[data$distance_from_stream>0,] %>% group_by(Reservoir, Site) %>%
   mutate(CV_NH4 = cv(NH4_ugL, na.rm = TRUE)) %>% 
   mutate(CV_TP = cv(TP_ugL, na.rm = TRUE)) %>% 
   mutate(CV_TN = cv(TN_ugL, na.rm = TRUE)) %>% 
-  mutate(CV_TNTP = cv(TN_TP, na.rm = TRUE)) %>% 
+  #mutate(CV_TNTP = cv(TN_TP, na.rm = TRUE)) %>% 
   mutate(CV_A = cv(A, na.rm = TRUE)) %>% 
   mutate(CV_T = cv(A, na.rm = TRUE)) %>% 
   mutate(CV_HIX = cv(HIX, na.rm = TRUE)) %>% 
   mutate(CV_BIX = cv(BIX, na.rm = TRUE)) %>% 
-  mutate(CV_DPTP = cv(DP_TP, na.rm = TRUE)) %>% 
-  mutate(CV_DNTN = cv(DN_TN, na.rm = TRUE)) %>% 
-  select(Date, Reservoir, distance_from_stream, distance_m, CV_chl:CV_DNTN) %>% 
+  mutate(CV_DOC = cv(DOC_mgL, na.rm = TRUE)) %>% 
+  #mutate(CV_DPTP = cv(DP_TP, na.rm = TRUE)) %>% 
+  #mutate(CV_DNTN = cv(DN_TN, na.rm = TRUE)) %>% 
+  select(Date, Reservoir, distance_from_stream, distance_m, CV_chl:CV_DOC) %>% 
   distinct(Site, Reservoir, .keep_all = TRUE)
 CV_time$Date <- as.Date(CV_time$Date)
 
 time_long <- CV_time %>% 
-  pivot_longer(CV_chl:CV_DNTN, names_to = 'variable', values_to = 'cv')
+  pivot_longer(CV_chl:CV_DOC, names_to = 'variable', values_to = 'cv')
 time_long$axis <- 'time'
+
+levels <- c('CV_T', 'CV_A', 'CV_HIX', 'CV_BIX',
+            'CV_DOC',
+            'CV_NH4', 'CV_NO3', 'CV_SRP',
+            'CV_TN', 'CV_TP', 'CV_chl')
+labels <- c('T-alloch', 'A-autoch', 'HIX-alloch', 'BIX-autoch',
+            'DOC',
+            'NH4', 'NO3', 'SRP',
+            'TN', 'TP', 'Chl-a')
+names(labels) <- levels
+time_long$variable <- factor(time_long$variable, levels = levels)
+
 
 CV_site <- data[data$distance_from_stream>0,] %>% group_by(Reservoir, Date) %>% 
   mutate(CV_chl = cv(Chla_ugL, na.rm = TRUE)) %>% 
@@ -167,20 +182,23 @@ CV_site <- data[data$distance_from_stream>0,] %>% group_by(Reservoir, Date) %>%
   mutate(CV_NH4 = cv(NH4_ugL, na.rm = TRUE)) %>% 
   mutate(CV_TP = cv(TP_ugL, na.rm = TRUE)) %>% 
   mutate(CV_TN = cv(TN_ugL, na.rm = TRUE)) %>% 
-  mutate(CV_TNTP = cv(TN_TP, na.rm = TRUE)) %>% 
+  #mutate(CV_TNTP = cv(TN_TP, na.rm = TRUE)) %>% 
   mutate(CV_A = cv(A, na.rm = TRUE)) %>% 
   mutate(CV_T = cv(A, na.rm = TRUE)) %>% 
   mutate(CV_HIX = cv(HIX, na.rm = TRUE)) %>% 
   mutate(CV_BIX = cv(BIX, na.rm = TRUE)) %>% 
-  mutate(CV_DPTP = cv(DP_TP, na.rm = TRUE)) %>% 
-  mutate(CV_DNTN = cv(DN_TN, na.rm = TRUE)) %>% 
-  select(Date, Reservoir, distance_from_stream, distance_m, CV_chl:CV_DNTN) %>% 
+  mutate(CV_DOC = cv(DOC_mgL, na.rm = TRUE)) %>% 
+  #mutate(CV_DPTP = cv(DP_TP, na.rm = TRUE)) %>% 
+  #mutate(CV_DNTN = cv(DN_TN, na.rm = TRUE)) %>% 
+  select(Date, Reservoir, distance_from_stream, distance_m, CV_chl:CV_DOC) %>% 
   distinct(Date, Reservoir, .keep_all = TRUE)
 CV_site$Date <- as.Date(CV_site$Date)
 
 site_long <- CV_site %>% 
-  pivot_longer(CV_chl:CV_DNTN, names_to = 'variable', values_to = 'cv')
+  pivot_longer(CV_chl:CV_DOC, names_to = 'variable', values_to = 'cv')
 site_long$axis <- 'space'
+names(labels) <- levels
+site_long$variable <- factor(site_long$variable, levels = levels)
 
 ## plots
 ggplot(time_long, aes(x = as.factor(Site), y = cv, fill = Reservoir)) +
@@ -198,7 +216,7 @@ long_both <- full_join(time_long, site_long)
 ggplot(long_both, aes(x = as.factor(axis), y = cv, fill = Reservoir)) +
   geom_boxplot() +
   facet_wrap(~variable, scale = 'free') +
-  geom_point(position=position_jitterdodge(),alpha=0.3) +
+  geom_point(position=position_jitterdodge(),alpha=0.3)# +
   ggtitle('just in-reservoir data')
   
 
