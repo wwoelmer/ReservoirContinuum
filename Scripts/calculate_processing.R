@@ -92,7 +92,7 @@ for(j in 1:length(vars)){
        temp3$delta[temp3$Site==45] <- temp3$value[temp3$Site==45] - mean(c(temp3$value[temp3$Site==1], temp3$value[temp3$Site==30]), na.rm = TRUE)
        temp3$delta[temp3$Site==50] <- temp3$value[temp3$Site==50] - temp3$value[temp3$Site==45]
        temp3$delta_simple <- temp3$value[temp3$Site==50] - mean(c(temp3$value[temp3$Site==100], temp3$value[temp3$Site==200]), na.rm = TRUE)
-       temp3$delta_cumu <- sum(temp3$delta, na.rm = TRUE)
+       #temp3$delta_cumu <- sum(temp3$delta, na.rm = TRUE)
      }
      if(temp3$Reservoir=='FCR'){
        temp3$delta[temp3$Site==99] <- 0
@@ -102,7 +102,7 @@ for(j in 1:length(vars)){
        temp3$delta[temp3$Site==45] <- temp3$value[temp3$Site==45] - temp3$value[temp3$Site==30]
        temp3$delta[temp3$Site==50] <- temp3$value[temp3$Site==50] - temp3$value[temp3$Site==45]
        temp3$delta_simple <- temp3$value[temp3$Site==50] - mean(c(temp3$value[temp3$Site==99], temp3$value[temp3$Site==200]), na.rm = TRUE)
-       temp3$cumu <- sum(temp3$delta, na.rm = TRUE)
+       #temp3$cumu <- sum(temp3$delta, na.rm = TRUE)
        
        
      }  
@@ -115,6 +115,9 @@ test <- test[-1,]
 
 ### delta = what was produced between the two sites, so a positive value indicates that nutrients were produced, 
 ### negative means they were buried
+
+vars_keep <- c('Chla_ugL', 'DOC_mgL', 'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL', 'TN_ugL', 'TP_ugL', 'sp_cond')
+test <- test[test$variable %in% vars_keep,]
 ggplot(data = test[test$distance_from_stream >0 & test$Reservoir=='BVR',], aes(x = distance_m, y = delta)) +
   facet_wrap(~variable, scales = 'free') +
   geom_line(aes(col = as.factor(month(Date)))) +
@@ -124,7 +127,8 @@ ggplot(data = test[test$distance_from_stream >0 & test$Reservoir=='BVR',], aes(x
 ggplot(data = test[test$distance_from_stream >0 & test$Reservoir=='FCR',], aes(x = distance_m, y = delta)) +
   facet_wrap(~variable, scales = 'free') +
   geom_line(aes(col = as.factor(month(Date)))) +
-  geom_hline(aes(yintercept = 0)) 
+  geom_hline(aes(yintercept = 0)) +
+  geom_point(aes(x = 600, y = delta_simple, col = as.factor(month(Date))), size = 4)
 
 
 
