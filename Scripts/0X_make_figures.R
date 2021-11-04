@@ -89,14 +89,16 @@ long <- data %>%
   pivot_longer(TN_ugL:DN_TN, names_to = 'variable', values_to = 'value')
 
 
-levels <- c('A', 'T', 'DOC_mgL',
+levels <- c('T', 'A', 'HIX', 'BIX',
+            'DOC_mgL',
             'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
             'TN_ugL', 'TP_ugL', 'Chla_ugL',
-            'HIX', 'BIX', 'TN_TP', 'DP_TP', 'DN_TN')
-labels <- c('Autoch', 'Alloch', 'DOC',
+             'TN_TP', 'DP_TP', 'DN_TN')
+labels <- c('T-alloch', 'A-autoch', 'HIX-alloch', 'BIX-autoch',
+            'DOC',
             'NH4', 'NO3', 'SRP',
             'TN', 'TP', 'Chl-a',
-            'HIX', 'BIX', 'TN_TP', 'DP_TP', 'DN_TN')
+             'TN_TP', 'DP_TP', 'DN_TN')
 names(labels) <- levels
 long$variable <- factor(long$variable, levels = levels)
 
