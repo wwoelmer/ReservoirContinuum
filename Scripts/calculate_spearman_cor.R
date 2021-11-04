@@ -54,8 +54,8 @@ for(i in 1:length(vars)){
                    pch.cex = 1, 
                    pch.col = "white",
                    addCoef.col = "white", bg = "black", 
-               tl.col="black",  tl.offset=0.5,
-               type = 'lower', 
+                   tl.col="black",  tl.offset=0.5,
+                   type = 'lower', 
                    title = paste0(vars[i], ' ', res[j]),
                    mar=c(0,0,1,0)))
     
