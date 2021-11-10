@@ -89,15 +89,13 @@ long <- data %>%
   pivot_longer(TN_ugL:DN_TN, names_to = 'variable', values_to = 'value')
 
 
-levels <- c('T', 'A', 'HIX', 'BIX',
-            'DOC_mgL',
+levels <- c('T', 'BIX', 'A', 'HIX',
+            'DOC_mgL',  'Chla_ugL','TN_ugL', 'TP_ugL',
             'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
-            'TN_ugL', 'TP_ugL', 'Chla_ugL',
              'TN_TP', 'DP_TP', 'DN_TN')
-labels <- c('T-alloch', 'A-autoch', 'HIX-alloch', 'BIX-autoch',
-            'DOC',
+labels <- c('T-autoch', 'BIX-autoch', 'A-alloch','HIX-alloch', 
+            'DOC','Chl-a', 'TN', 'TP',
             'NH4', 'NO3', 'SRP',
-            'TN', 'TP', 'Chl-a',
              'TN_TP', 'DP_TP', 'DN_TN')
 names(labels) <- levels
 long$variable <- factor(long$variable, levels = levels)
@@ -115,8 +113,11 @@ ggplot(data = long[long$distance_from_stream > 0,], aes(x = distance_m, y = valu
         #   legend.position = "none"
   )
 
+
+
 # and with stream measurements
-ggplot(data = long, aes(x = distance_m, y = value)) +
+weir_stream <- c('102', '101', '100', '01')
+ggplot(data = long[!(long$Site %in% weir_stream),], aes(x = distance_m, y = value)) +
   geom_point(aes(col = as.factor(Reservoir))) +
   geom_smooth() +
   xlab('Distance from stream') +
@@ -143,7 +144,8 @@ ggplot(data = long[long$distance_from_stream > 0,], aes(x = distance_from_stream
   )
 
 ggplot(data = long[long$Reservoir=='BVR' & long$distance_from_stream > 0,], aes(x = distance_m, y = value, col = as.factor(Date))) +
-  geom_smooth(aes(group = as.factor(Date))) +
+  #geom_smooth(aes(group = as.factor(Date))) +
+  geom_line(stat = 'smooth', method = 'loess', alpha = 0.5, size = 1) +
   geom_point() +
   xlab('Distance from stream') +
   ylab('Concentration') +
@@ -156,6 +158,20 @@ ggplot(data = long[long$Reservoir=='BVR' & long$distance_from_stream > 0,], aes(
         )
 ggplot(data = long[long$Reservoir=='FCR' & long$distance_from_stream > 0,], aes(x = distance_m, y = value, col = as.factor(Date))) +
   geom_point() +
+  geom_smooth(aes(col = as.factor(Date)), alpha = 0.5) +
+  xlab('Distance from stream') +
+  ylab('Concentration') +
+  facet_wrap(~variable, scales = "free", labeller = labeller(variable = labels)) + 
+  scale_color_manual(values = rev(hcl.colors(7, "RdYlGn"))) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        #   legend.position = "none"
+  )
+
+ggplot(data = long[long$distance_from_stream > 0,], aes(x = distance_m, y = value, col = as.factor(Date), 
+                                                        linetype = Reservoir)) +
+  geom_point() +
   geom_smooth(aes(col = as.factor(Date))) +
   xlab('Distance from stream') +
   ylab('Concentration') +
@@ -166,6 +182,7 @@ ggplot(data = long[long$Reservoir=='FCR' & long$distance_from_stream > 0,], aes(
         panel.grid.minor = element_blank(),
         #   legend.position = "none"
   )
+
 no_stream <- ggplot(data = long[long$distance_from_stream > 0,], aes(x = distance_from_stream, y = value, col = as.factor(Date))) +
   geom_point(size = 6, aes(shape = as.factor(Reservoir))) +
   geom_smooth() +
