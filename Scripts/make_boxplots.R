@@ -82,30 +82,32 @@ CV_time <- data[data$distance_from_stream>0,] %>% group_by(Reservoir, Site) %>%
   mutate(CV_NH4 = cv(NH4_ugL, na.rm = TRUE)) %>% 
   mutate(CV_TP = cv(TP_ugL, na.rm = TRUE)) %>% 
   mutate(CV_TN = cv(TN_ugL, na.rm = TRUE)) %>% 
-  #mutate(CV_TNTP = cv(TN_TP, na.rm = TRUE)) %>% 
+  mutate(CV_TNTP = cv(TN_TP, na.rm = TRUE)) %>% 
   mutate(CV_A = cv(A, na.rm = TRUE)) %>% 
   mutate(CV_T = cv(A, na.rm = TRUE)) %>% 
   mutate(CV_HIX = cv(HIX, na.rm = TRUE)) %>% 
   mutate(CV_BIX = cv(BIX, na.rm = TRUE)) %>% 
   mutate(CV_DOC = cv(DOC_mgL, na.rm = TRUE)) %>% 
-  #mutate(CV_DPTP = cv(DP_TP, na.rm = TRUE)) %>% 
-  #mutate(CV_DNTN = cv(DN_TN, na.rm = TRUE)) %>% 
-  select(Date, Reservoir, distance_from_stream, distance_m, CV_chl:CV_DOC) %>% 
+  mutate(CV_DPTP = cv(DP_TP, na.rm = TRUE)) %>% 
+  mutate(CV_DNTN = cv(DN_TN, na.rm = TRUE)) %>% 
+  select(Date, Reservoir, distance_from_stream, distance_m, CV_chl:CV_DNTN) %>% 
   distinct(Site, Reservoir, .keep_all = TRUE)
 CV_time$Date <- as.Date(CV_time$Date)
 
 time_long <- CV_time %>% 
-  pivot_longer(CV_chl:CV_DOC, names_to = 'variable', values_to = 'cv')
+  pivot_longer(CV_chl:CV_DNTN, names_to = 'variable', values_to = 'cv')
 time_long$axis <- 'time'
 
 levels <- c('CV_T', 'CV_A', 'CV_HIX', 'CV_BIX',
             'CV_DOC',
             'CV_NH4', 'CV_NO3', 'CV_SRP',
-            'CV_TN', 'CV_TP', 'CV_chl')
+            'CV_TN', 'CV_TP', 'CV_chl',
+            'CV_TNTP', 'CV_DPTP', 'CV_DNTN')
 labels <- c('T-alloch', 'A-autoch', 'HIX-alloch', 'BIX-autoch',
             'DOC',
             'NH4', 'NO3', 'SRP',
-            'TN', 'TP', 'Chl-a')
+            'TN', 'TP', 'Chl-a',
+            'TNTP', 'DPTP', 'DNTN')
 names(labels) <- levels
 time_long$variable <- factor(time_long$variable, levels = levels)
 
@@ -117,20 +119,20 @@ CV_site <- data[data$distance_from_stream>0,] %>% group_by(Reservoir, Date) %>%
   mutate(CV_NH4 = cv(NH4_ugL, na.rm = TRUE)) %>% 
   mutate(CV_TP = cv(TP_ugL, na.rm = TRUE)) %>% 
   mutate(CV_TN = cv(TN_ugL, na.rm = TRUE)) %>% 
-  #mutate(CV_TNTP = cv(TN_TP, na.rm = TRUE)) %>% 
+  mutate(CV_TNTP = cv(TN_TP, na.rm = TRUE)) %>% 
   mutate(CV_A = cv(A, na.rm = TRUE)) %>% 
   mutate(CV_T = cv(A, na.rm = TRUE)) %>% 
   mutate(CV_HIX = cv(HIX, na.rm = TRUE)) %>% 
   mutate(CV_BIX = cv(BIX, na.rm = TRUE)) %>% 
   mutate(CV_DOC = cv(DOC_mgL, na.rm = TRUE)) %>% 
-  #mutate(CV_DPTP = cv(DP_TP, na.rm = TRUE)) %>% 
-  #mutate(CV_DNTN = cv(DN_TN, na.rm = TRUE)) %>% 
-  select(Date, Reservoir, distance_from_stream, distance_m, CV_chl:CV_DOC) %>% 
+  mutate(CV_DPTP = cv(DP_TP, na.rm = TRUE)) %>% 
+  mutate(CV_DNTN = cv(DN_TN, na.rm = TRUE)) %>% 
+  select(Date, Reservoir, distance_from_stream, distance_m, CV_chl:CV_DNTN) %>% 
   distinct(Date, Reservoir, .keep_all = TRUE)
 CV_site$Date <- as.Date(CV_site$Date)
 
 site_long <- CV_site %>% 
-  pivot_longer(CV_chl:CV_DOC, names_to = 'variable', values_to = 'cv')
+  pivot_longer(CV_chl:CV_DNTN, names_to = 'variable', values_to = 'cv')
 site_long$axis <- 'space'
 names(labels) <- levels
 site_long$variable <- factor(site_long$variable, levels = levels)
@@ -201,8 +203,14 @@ long_both %>%
       #test.args = list(exact = FALSE),
       map_signif_level = TRUE) +
       scale_fill_manual(values = r_col) +
+      scale_x_discrete(labels = c('Space', '', 'Time', '')) +
       theme(panel.grid.major = element_blank(), 
-            panel.grid.minor = element_blank())+
+            panel.grid.minor = element_blank(),
+            panel.background = element_blank(),
+            axis.text.x = element_text(hjust = 0, size = 12),
+            axis.ticks.x = element_blank(),
+            axis.text = element_text(size = 12)
+            )+
       xlab('Axis') +
       ylab('Coefficient of Variation (CV)')}
 dev.off()
@@ -230,7 +238,10 @@ long_both %>%
       map_signif_level = TRUE) +
       scale_fill_manual(values = r_col) +
       theme(panel.grid.major = element_blank(), 
-            panel.grid.minor = element_blank())+
+            panel.grid.minor = element_blank(),
+            axis.text.x = element_text(hjust = 0),
+            axis.ticks.x = element_blank()) +
+      scale_x_discrete(labels = c('Space', '', 'Time', '')) +
       xlab('Axis') +
       ylab('Coefficient of Variation (CV)')}
 
