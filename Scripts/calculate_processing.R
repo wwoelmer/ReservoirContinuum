@@ -4,7 +4,7 @@ library(patchwork)
 library(lubridate)
 library(EnvStats)
 library(ggpubr)
-library(ggpmisc)
+#library(ggpmisc)
 
 r_col <- c('olivedrab3', 'royalblue1')
 
@@ -63,11 +63,8 @@ data <- left_join(data, cond)
 #write.csv(data, './Data/intermediate_dataset.csv', row.names = FALSE)
 
 long <- data %>%   
-  select(Site, Reservoir, Date, Flow_cms, distance_from_stream, TN_ugL:Chla_ugL, A:BIX, sp_cond, distance_m) %>% 
+  select(Site, Reservoir, Date, Flow_cms, distance_from_stream, TN_ugL:Chla_ugL, A:BIX, TN_TP:DN_TN, sp_cond, distance_m) %>% 
   pivot_longer(TN_ugL:sp_cond, names_to = 'variable', values_to = 'value')
-
-
-
 
 # calculate 'processing'
 vars <- unique(long$variable)
@@ -90,18 +87,22 @@ for(j in 1:length(vars)){
        temp3$delta[temp3$Site==30] <- temp3$value[temp3$Site==30] - temp3$value[temp3$Site==200]
        temp3$delta[temp3$Site==1] <- temp3$value[temp3$Site==1] - temp3$value[temp3$Site==20]
        temp3$delta[temp3$Site==45] <- temp3$value[temp3$Site==45] - mean(c(temp3$value[temp3$Site==1], temp3$value[temp3$Site==30]), na.rm = TRUE)
+       #temp3$delta[temp3$Site==45] <- temp3$value[temp3$Site==45] - (temp3$value[temp3$Site==1] - temp3$value[temp3$Site==30])
        temp3$delta[temp3$Site==50] <- temp3$value[temp3$Site==50] - temp3$value[temp3$Site==45]
-       temp3$delta_simple <- temp3$value[temp3$Site==50] - mean(c(temp3$value[temp3$Site==100], temp3$value[temp3$Site==200]), na.rm = TRUE)
+       #temp3$delta_simple <- temp3$value[temp3$Site==50] - mean(c(temp3$value[temp3$Site==100], temp3$value[temp3$Site==200]), na.rm = TRUE)
+       temp3$delta_simple <- temp3$value[temp3$Site==50] - temp3$value[temp3$Site==100] - temp3$value[temp3$Site==200]
        #temp3$delta_cumu <- sum(temp3$delta, na.rm = TRUE)
      }
      if(temp3$Reservoir=='FCR'){
        temp3$delta[temp3$Site==99] <- 0
        temp3$delta[temp3$Site==200] <- 0
-       temp3$delta[temp3$Site==20] <- temp3$value[temp3$Site==20] - mean(c(temp3$value[temp3$Site==99], temp3$value[temp3$Site==200]), na.rm = TRUE)
+       temp3$delta[temp3$Site==20] <- temp3$value[temp3$Site==20] - (temp3$value[temp3$Site==99] - temp3$value[temp3$Site==200])
+       #temp3$delta[temp3$Site==20] <- temp3$value[temp3$Site==20] - mean(c(temp3$value[temp3$Site==99], temp3$value[temp3$Site==200]), na.rm = TRUE)
        temp3$delta[temp3$Site==30] <- temp3$value[temp3$Site==30] - temp3$value[temp3$Site==20]
        temp3$delta[temp3$Site==45] <- temp3$value[temp3$Site==45] - temp3$value[temp3$Site==30]
        temp3$delta[temp3$Site==50] <- temp3$value[temp3$Site==50] - temp3$value[temp3$Site==45]
-       temp3$delta_simple <- temp3$value[temp3$Site==50] - mean(c(temp3$value[temp3$Site==99], temp3$value[temp3$Site==200]), na.rm = TRUE)
+       #temp3$delta_simple <- temp3$value[temp3$Site==50] - mean(c(temp3$value[temp3$Site==99], temp3$value[temp3$Site==200]), na.rm = TRUE)
+       temp3$delta_simple <- temp3$value[temp3$Site==50] - temp3$value[temp3$Site==99] - temp3$value[temp3$Site==200]
        #temp3$cumu <- sum(temp3$delta, na.rm = TRUE)
        
        
@@ -118,33 +119,64 @@ test <- test[-1,]
 
 vars_keep <- c('Chla_ugL', 'DOC_mgL', 'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL', 'TN_ugL', 'TP_ugL', 'sp_cond')
 test <- test[test$variable %in% vars_keep,]
+
+# add LOQ values for each analyte: https://docs.google.com/spreadsheets/d/12jLdBMZKTm7Om8Wyo4L_yNjLb_2fCIGw/edit#gid=1973039800
+test$loq <- NA
+test$loq[test$variable=='NH4_ugL'] <- 11.8
+test$loq[test$variable=='SRP_ugL'] <- 6.2
+test$loq[test$variable=='NO3NO2_ugL'] <- 9.3
+test$loq[test$variable=='TP_ugL'] <- 13.2
+test$loq[test$variable=='TN_ugL'] <- 67.2
+test$loq[test$variable=='DOC_mgL'] <- 0.411
+
+# because all values are less than 50, the accuracy is 1% of reading +/- 0.05 uS/cm
+# taken from manual for conductivity sensor
+sp <- test[test$distance_from_stream > 0 & test$variable=='sp_cond',]
+hist(sp$value)
+
+for(i in 1:nrow(test)){
+  if(test$variable[i]=='sp_cond'){
+    test$loq[i] <- 0.01*test$value[i] + 0.05
+    test$delta_simple[i] <- NA
+    
+  }
+}
+
 ggplot(data = test[test$distance_from_stream >0 & test$Reservoir=='BVR',], aes(x = distance_m, y = delta)) +
   facet_wrap(~variable, scales = 'free') +
   geom_line(aes(col = as.factor(month(Date)))) +
   geom_hline(aes(yintercept = 0)) +
-  geom_point(aes(x = 1100, y = delta_simple, col = as.factor(month(Date))), size = 4)
+  geom_point(aes(x = 1100, y = delta_simple, col = as.factor(month(Date))), size = 4)+
+  geom_ribbon(aes(ymin = delta -loq, ymax = delta + loq, col = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())+
+  ylab('Delta from upstream') +
+  xlab('Distance from upstream (m)')
+
 
 ggplot(data = test[test$distance_from_stream >0 & test$Reservoir=='FCR',], aes(x = distance_m, y = delta)) +
   facet_wrap(~variable, scales = 'free') +
   geom_line(aes(col = as.factor(month(Date)))) +
   geom_hline(aes(yintercept = 0)) +
+  geom_point(aes(x = 600, y = delta_simple, col = as.factor(month(Date))), size = 4)+
+  geom_ribbon(aes(ymin = delta -loq, ymax = delta + loq, col = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  ylab('Delta from upstream') +
+  xlab('Distance from upstream (m)')
+
+
+##### calculate normalized distance 
+test <- test %>% 
+  mutate(delta_norm = delta/distance_m) 
+
+ggplot(data = test[test$distance_from_stream>0,], aes(x = distance_m, y = delta_norm)) +
+  facet_wrap(~variable, scales = 'free') +
+  geom_line(aes(col = as.factor(month(Date)), linetype = Reservoir)) +
+  geom_hline(aes(yintercept = 0)) #+
   geom_point(aes(x = 600, y = delta_simple, col = as.factor(month(Date))), size = 4)
-
-
-
-#
-out <- test %>% 
-  select(Reservoir, Date, variable, delta_simple, cumu) %>% 
-  distinct(Reservoir, Date, variable, .keep_all = TRUE) %>% 
-  pivot_longer(delta_simple:cumu, names_to = 'type', values_to = 'delta')
-
-ggplot(data = out[out$Reservoir=='FCR',], aes(x = Date, y = delta, fill = type)) + 
-  geom_bar(position = 'dodge', stat = 'identity') +
-  facet_wrap(~variable, scales = 'free')
-
-ggplot(data = out[out$Reservoir=='BVR',], aes(x = Date, y = delta, fill = type)) + 
-  geom_bar(position = 'dodge', stat = 'identity') +
-  facet_wrap(~variable, scales = 'free')
 
 # now calculate q*concentration
 load_sites <- c('FCR_99', 'FCR_200', 'BVR_100', 'BVR_200', 'FCR_1',  'FCR_50', 'BVR_50')
@@ -154,7 +186,12 @@ long_load <- long[long$site_res %in% load_sites,]
 
 
 # assign flows for F50 based on F01 (but not use concentrations from F01 because they come from toe drain sometimes)
-long_load$Flow_cms[long_load$site_res=='FCR_50'] <- long_load$Flow_cms[long_load$site_res=='FCR_1']
+for(i in 1:length(unique(long_load$Date))){
+  if(length(long_load$Flow_cms[long_load$site_res=='FCR_1'& long_load$Date==unique(long_load$Date)[i]]) > 1){
+  long_load$Flow_cms[long_load$site_res=='FCR_50' & long_load$Date==unique(long_load$Date)[i]] <- long_load$Flow_cms[long_load$site_res=='FCR_1'& long_load$Date==unique(long_load$Date)[i]]
+  }
+}
+
 
 # need to add in flows for B50 from BVR GLM outflow estimates: https://github.com/CareyLabVT/BVR-GLM/blob/master/inputs/BVR_spillway_outflow_2014_2019_20210223_nldasInflow.csv
 long_load$Flow_cms[long_load$site_res=='BVR_50' & long_load$Date=='2019-04-29'] <- 0.0204
@@ -193,8 +230,8 @@ for(j in 1:length(vars)){
 
 
 
-ggplot(data = long_load_2, aes(x = month(Date), y = delta_load, col = as.factor(Reservoir))) +
-  geom_point() +
+ggplot(data = long_load_2, aes(x = month(Date), y = delta_load, col = as.factor(Date), shape = Reservoir)) +
+  geom_point(size = 3) +
   facet_wrap(~variable, scales = 'free') +
   geom_hline(aes(yintercept = 0))
 
