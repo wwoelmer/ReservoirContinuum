@@ -170,68 +170,170 @@ ggplot(data = test[test$distance_from_stream >0 & test$Reservoir=='FCR',], aes(x
 
 ##### calculate normalized distance 
 test <- test %>% 
-  mutate(delta_norm = delta/distance_m) 
+  mutate(delta_norm = (delta/distance_m)) %>% 
+  mutate(norm_distance = ifelse(Reservoir=='BVR', distance_m/1117, distance_m/642))
 
 ggplot(data = test[test$distance_from_stream>0,], aes(x = distance_m, y = delta_norm)) +
   facet_wrap(~variable, scales = 'free') +
   geom_line(aes(col = as.factor(month(Date)), linetype = Reservoir)) +
-  geom_hline(aes(yintercept = 0)) #+
-  geom_point(aes(x = 600, y = delta_simple, col = as.factor(month(Date))), size = 4)
+  geom_hline(aes(yintercept = 0)) +
+  #geom_point(aes(x = 600, y = delta_simple, col = as.factor(month(Date))), size = 4) +
+  ylab('Delta over distance (ug/L / m)') +
+  xlab('Normalized distance (% of total reservoir length)')
+  
+ggplot(data = test[test$distance_from_stream>0,], aes(x = norm_distance, y = delta_norm)) +
+  facet_wrap(~variable, scales = 'free') +
+  geom_line(aes(col = as.factor(month(Date)), linetype = Reservoir)) +
+  geom_hline(aes(yintercept = 0))
 
+ggplot(data = test[test$distance_from_stream>0 & test$Reservoir=='FCR',], aes(x = distance_m, y = delta_norm)) +
+  facet_wrap(~variable, scales = 'free') +
+  geom_line(aes(col = as.factor(month(Date)))) +
+  geom_hline(aes(yintercept = 0))
+  
+ggplot(data = test[test$distance_from_stream>0 & test$Reservoir=='BVR',], aes(x = distance_m, y = delta_norm)) +
+  facet_wrap(~variable, scales = 'free') +
+  geom_line(aes(col = as.factor(month(Date)))) +
+  geom_hline(aes(yintercept = 0)) 
+  
+  
 # now calculate q*concentration
 load_sites <- c('FCR_99', 'FCR_200', 'BVR_100', 'BVR_200', 'FCR_1',  'FCR_50', 'BVR_50')
+bvr_res <- c('BVR_20', 'BVR_30', 'BVR_1', 'BVR_45', 'BVR_50')
+fcr_res <- c('FCR_20', 'FCR_30', 'FCR_45', 'FCR_50')
 
 long$site_res <- paste0(long$Reservoir, "_", long$Site)
-long_load <- long[long$site_res %in% load_sites,]
+long_load <- long
 
 
 # assign flows for F50 based on F01 (but not use concentrations from F01 because they come from toe drain sometimes)
 for(i in 1:length(unique(long_load$Date))){
   if(length(long_load$Flow_cms[long_load$site_res=='FCR_1'& long_load$Date==unique(long_load$Date)[i]]) > 1){
-  long_load$Flow_cms[long_load$site_res=='FCR_50' & long_load$Date==unique(long_load$Date)[i]] <- long_load$Flow_cms[long_load$site_res=='FCR_1'& long_load$Date==unique(long_load$Date)[i]]
+  long_load$Flow_cms[long_load$site_res %in% fcr_res & long_load$Date==unique(long_load$Date)[i]] <- long_load$Flow_cms[long_load$site_res=='FCR_1'& long_load$Date==unique(long_load$Date)[i]]
   }
 }
 
 
 # need to add in flows for B50 from BVR GLM outflow estimates: https://github.com/CareyLabVT/BVR-GLM/blob/master/inputs/BVR_spillway_outflow_2014_2019_20210223_nldasInflow.csv
-long_load$Flow_cms[long_load$site_res=='BVR_50' & long_load$Date=='2019-04-29'] <- 0.0204
-long_load$Flow_cms[long_load$site_res=='BVR_50' & long_load$Date=='2019-05-30'] <- 0.0329
-long_load$Flow_cms[long_load$site_res=='BVR_50' & long_load$Date=='2019-06-27'] <- 0.0126
-long_load$Flow_cms[long_load$site_res=='BVR_50' & long_load$Date=='2019-07-18'] <- 0.0016
-long_load$Flow_cms[long_load$site_res=='BVR_50' & long_load$Date=='2019-08-22'] <- 0.0173
-long_load$Flow_cms[long_load$site_res=='BVR_50' & long_load$Date=='2019-09-20'] <- 0.005
-long_load$Flow_cms[long_load$site_res=='BVR_50' & long_load$Date=='2019-10-04'] <- 0.0097
+long_load$Flow_cms[long_load$site_res %in% bvr_res & long_load$Date=='2019-04-29'] <- 0.0204
+long_load$Flow_cms[long_load$site_res %in% bvr_res & long_load$Date=='2019-05-30'] <- 0.0329
+long_load$Flow_cms[long_load$site_res %in% bvr_res & long_load$Date=='2019-06-27'] <- 0.0126
+long_load$Flow_cms[long_load$site_res %in% bvr_res & long_load$Date=='2019-07-18'] <- 0.0016
+long_load$Flow_cms[long_load$site_res %in% bvr_res & long_load$Date=='2019-08-22'] <- 0.0173
+long_load$Flow_cms[long_load$site_res %in% bvr_res & long_load$Date=='2019-09-20'] <- 0.005
+long_load$Flow_cms[long_load$site_res %in% bvr_res & long_load$Date=='2019-10-04'] <- 0.0097
 
 
 long_load <- long_load %>% 
   group_by(Date, Reservoir, Site) %>% 
   mutate(load = value*Flow_cms)
 
-long_load$delta_load <- NA
+
+# use loads to calculate the delta concentration instead of raw values
+long_load$delta_load_simple <- NA
+long_load$delta_load_spatial <- NA
 long_load_2 <- long_load
+
+test_load <- NA
+
 for(j in 1:length(vars)){
-  temp <- long_load[long_load$variable==vars[j],]
+  temp <- long_load_2[long_load_2$variable==vars[j],]
   for (k in 1:length(dates)) {
     temp2 <- temp[temp$Date==dates[k],]
     for(m in 1:length(res)){
       temp3 <- temp2[temp2$Reservoir==res[m],]
       if(temp3$Reservoir=='BVR'){
-       temp3$delta_load <- temp3$load[temp3$site_res=='BVR_50'] - sum(c(temp3$load[temp3$site_res=='BVR_100'], temp3$load[temp3$site_res=='BVR_200']))
+        temp3$delta_load_spatial[temp3$Site==100] <- 0
+        temp3$delta_load_spatial[temp3$Site==200] <- 0
+        temp3$delta_load_spatial[temp3$Site==20] <- temp3$load[temp3$Site==20] - temp3$load[temp3$Site==100]
+        temp3$delta_load_spatial[temp3$Site==30] <- temp3$load[temp3$Site==30] - temp3$load[temp3$Site==200]
+        temp3$delta_load_spatial[temp3$Site==1] <- temp3$load[temp3$Site==1] - temp3$load[temp3$Site==20]
+        temp3$delta_load_spatial[temp3$Site==45] <- temp3$load[temp3$Site==45] - mean(c(temp3$load[temp3$Site==1], temp3$load[temp3$Site==30]), na.rm = TRUE)
+        #temp3$delta_load_spatial[temp3$Site==45] <- temp3$load[temp3$Site==45] - (temp3$load[temp3$Site==1] - temp3$load[temp3$Site==30])
+        temp3$delta_load_spatial[temp3$Site==50] <- temp3$load[temp3$Site==50] - temp3$load[temp3$Site==45]
+        #temp3$delta_load_simple <- temp3$load[temp3$Site==50] - mean(c(temp3$load[temp3$Site==100], temp3$load[temp3$Site==200]), na.rm = TRUE)
+        temp3$delta_load_simple <- temp3$load[temp3$Site==50] - sum(temp3$load[temp3$Site==100], temp3$load[temp3$Site==200], na.rm = TRUE)
+        
       }
       if(temp3$Reservoir=='FCR'){
-       temp3$delta_load <- temp3$load[temp3$site_res=='FCR_50'] - sum(c(temp3$load[temp3$site_res=='FCR_99'], temp3$load[temp3$site_res=='FCR_200']))
+        temp3$delta_load_spatial[temp3$Site==99] <- 0
+        temp3$delta_load_spatial[temp3$Site==200] <- 0
+        temp3$delta_load_spatial[temp3$Site==20] <- temp3$load[temp3$Site==20] - sum(temp3$load[temp3$Site==99], temp3$load[temp3$Site==200], na.rm = TRUE)
+        #temp3$delta_load_spatial[temp3$Site==20] <- temp3$load[temp3$Site==20] - mean(c(temp3$load[temp3$Site==99], temp3$load[temp3$Site==200]), na.rm = TRUE)
+        temp3$delta_load_spatial[temp3$Site==30] <- temp3$load[temp3$Site==30] - temp3$load[temp3$Site==20]
+        temp3$delta_load_spatial[temp3$Site==45] <- temp3$load[temp3$Site==45] - temp3$load[temp3$Site==30]
+        temp3$delta_load_spatial[temp3$Site==50] <- temp3$load[temp3$Site==50] - temp3$load[temp3$Site==45]
+        #temp3$delta_load_simple <- temp3$load[temp3$Site==50] - mean(c(temp3$load[temp3$Site==99], temp3$load[temp3$Site==200]), na.rm = TRUE)
+        temp3$delta_load_simple <- temp3$load[temp3$Site==50] - sum(temp3$load[temp3$Site==99], temp3$load[temp3$Site==200], na.rm = TRUE)
         
         
       }  
-      long_load_2 <- rbind(long_load_2, temp3)   
+      test_load <- rbind(test_load, as.data.frame(temp3))   
     }
+  }
+}
+
+test_load <- test_load[-1,]
+exclude <- c('FCR_102', 'FCR_101', 'FCR_100', 'FCR_1')
+test_load <- test_load[!(test_load$site_res %in% exclude),]
+
+# add LOQ values for each analyte: https://docs.google.com/spreadsheets/d/12jLdBMZKTm7Om8Wyo4L_yNjLb_2fCIGw/edit#gid=1973039800
+test_load$loq <- NA
+test_load$loq[test_load$variable=='NH4_ugL'] <- 11.8
+test_load$loq[test_load$variable=='SRP_ugL'] <- 6.2
+test_load$loq[test_load$variable=='NO3NO2_ugL'] <- 9.3
+test_load$loq[test_load$variable=='TP_ugL'] <- 13.2
+test_load$loq[test_load$variable=='TN_ugL'] <- 67.2
+test_load$loq[test_load$variable=='DOC_mgL'] <- 0.411
+
+# because all values are less than 50, the accuracy is 1% of reading +/- 0.05 uS/cm
+# taken from manual for conductivity sensor
+sp <- test_load[test_load$distance_from_stream > 0 & test_load$variable=='sp_cond',]
+hist(sp$value)
+
+for(i in 1:nrow(test_load)){
+  if(test_load$variable[i]=='sp_cond'){
+    test_load$loq[i] <- 0.01*test_load$value[i] + 0.05
   }
 }
 
 
 
-ggplot(data = long_load_2, aes(x = month(Date), y = delta_load, col = as.factor(Date), shape = Reservoir)) +
-  geom_point(size = 3) +
+ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$Reservoir=='BVR',], aes(x = distance_m, y = delta_load_spatial)) +
   facet_wrap(~variable, scales = 'free') +
-  geom_hline(aes(yintercept = 0))
+  geom_line(aes(col = as.factor(month(Date)))) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_point(aes(x = 1100, y = delta_load_simple, col = as.factor(month(Date))), size = 4)+
+  geom_ribbon(aes(ymin = delta_load_spatial -loq*Flow_cms, ymax = delta_load_spatial + loq*Flow_cms, col = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())+
+  ylab('Delta load from upstream') +
+  xlab('Distance from upstream (m)')
 
+
+ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$Reservoir=='FCR',], aes(x = distance_m, y = delta_load_spatial)) +
+  facet_wrap(~variable, scales = 'free') +
+  geom_line(aes(col = as.factor(month(Date)))) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_point(aes(x = 600, y = delta_load_simple, col = as.factor(month(Date))), size = 4)+
+  geom_ribbon(aes(ymin = delta_load_spatial -loq*Flow_cms, ymax = delta_load_spatial + loq*Flow_cms, col = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  ylab('Delta load from upstream') +
+  xlab('Distance from upstream (m)')
+
+
+# how do BVR and FCR flow quantities compare
+inf <- long_load_2[long_load_2$Site > 50,]
+inf <- inf %>% 
+  select(Site, Reservoir, Date, site_res, Flow_cms) %>% 
+  distinct(Site, Reservoir, Date, .keep_all = TRUE) %>% 
+  group_by(Reservoir, Date) %>% 
+  mutate(cum_inf = sum(Flow_cms, na.rm = TRUE))
+
+ggplot(data = inf, aes(x = Date, y = cum_inf, col = Reservoir)) +
+  geom_line()
+ggplot(data = inf, aes(x = Date, y = Flow_cms, col = as.factor(site_res))) +
+  geom_line()
