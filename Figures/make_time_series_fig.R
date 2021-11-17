@@ -54,15 +54,19 @@ long <- data %>%
   select(Site, Reservoir, Date, distance_from_stream, TN_ugL:Chla_ugL, A:BIX, TN_TP:distance_m) %>% 
   pivot_longer(TN_ugL:DN_TN, names_to = 'variable', values_to = 'value')
 
+vars_keep <-  c('T', 'A', 
+                'DOC_mgL',  'Chla_ugL','TN_ugL', 'TP_ugL',
+                'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL') #'HIX', 'BIX'
+long <- long[long$variable %in% vars_keep,]
 
-levels <- c('T', 'BIX', 'A', 'HIX',
-            'DOC_mgL',  'Chla_ugL','TN_ugL', 'TP_ugL',
+levels <- c('T', 'A', 'DOC_mgL',  
             'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
-            'TN_TP', 'DP_TP', 'DN_TN')
-labels <- c('T-autoch', 'BIX-autoch', 'A-alloch','HIX-alloch', 
-            'DOC','Chl-a', 'TN', 'TP',
+            'Chla_ugL','TN_ugL', 'TP_ugL')
+            #'TN_TP', 'DP_TP', 'DN_TN') #'HIX', 'BIX'
+labels <- c('T-autoch',  'A-alloch', 'DOC',
             'NH4', 'NO3', 'SRP',
-            'TN_TP', 'DP_TP', 'DN_TN')
+            'Chl-a', 'TN', 'TP') #'BIX-autoch','HIX-alloch',
+            #'TN_TP', 'DP_TP', 'DN_TN')
 names(labels) <- levels
 long$variable <- factor(long$variable, levels = levels)
 long$Month <- as.factor(month(long$Date))
@@ -71,33 +75,34 @@ long$Month <- as.factor(month(long$Date))
 ### time series color by date, one for each reservoir
 
 ## FCR
-ggplot(data = long[long$Reservoir=='FCR' & long$distance_from_stream > 0,], aes(x = distance_m, y = value, col = Month)) +
+f <- ggplot(data = long[long$Reservoir=='FCR' & long$distance_from_stream > 0,], aes(x = distance_m, y = value, col = Month)) +
   geom_point() +
   geom_smooth(aes(col = Month), alpha = 0.5) +
-  xlab('Distance from stream') +
+  xlab('Distance from stream (m)') +
   ylab('Concentration') +
   facet_wrap(~variable, scales = "free", labeller = labeller(variable = labels)) + 
-  scale_color_manual(values = rev(hcl.colors(7, "RdYlGn"))) +
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_rect(fill = 'grey95'))
+        panel.grid.minor = element_blank()) +
+  ggtitle('Falling Creek Reservoir')
 
 ## BVR
-ggplot(data = long[long$Reservoir=='BVR' & long$distance_from_stream > 0,], aes(x = distance_m, y = value, col = Month)) +
+b <- ggplot(data = long[long$Reservoir=='BVR' & long$distance_from_stream > 0,], aes(x = distance_m, y = value, col = Month)) +
   geom_point() +
   geom_smooth(aes(col = Month)) +
-  xlab('Distance from stream') +
+  xlab('Distance from stream (m)') +
   ylab('Concentration') +
   facet_wrap(~variable, scales = "free", labeller = labeller(variable = labels)) + 
-  scale_color_manual(values = rev(hcl.colors(7, "RdYlGn"))) +
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
   theme_bw() +
   labs(col = 'Month') +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
-        panel.background = element_rect(fill = 'grey95'))
+        legend.position = "none") +
+  ggtitle('Beaverdam Reservoir')
 
-
+ggarrange(b, f, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
 
 ######################################################################################################################
 ### group all data over distance from stream
