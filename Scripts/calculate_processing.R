@@ -297,14 +297,19 @@ for(i in 1:nrow(test_load)){
   }
 }
 
-
+test_load$loq_load <- test_load$loq*test_load$Flow_cms
+vars_process <- c('T', 'A', 'HIX', 'BIX',
+                  'DOC_mgL', 'Chla_ugL', 
+                  'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
+                  'TN_ugL', 'TP_ugL', 'sp_cond')
+test_load <- test_load[test_load$variable %in% vars_process,]
 
 ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$Reservoir=='BVR',], aes(x = distance_m, y = delta_load_spatial)) +
   facet_wrap(~variable, scales = 'free') +
   geom_line(aes(col = as.factor(month(Date)))) +
   geom_hline(aes(yintercept = 0)) +
   geom_point(aes(x = 1100, y = delta_load_simple, col = as.factor(month(Date))), size = 4)+
-  geom_ribbon(aes(ymin = delta_load_spatial -loq*Flow_cms, ymax = delta_load_spatial + loq*Flow_cms, col = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
+  #geom_ribbon(aes(ymin = delta_load_spatial -loq_load, ymax = delta_load_spatial + loq_load, col = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         panel.background = element_blank())+
@@ -317,7 +322,7 @@ ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$Reservoir=
   geom_line(aes(col = as.factor(month(Date)))) +
   geom_hline(aes(yintercept = 0)) +
   geom_point(aes(x = 600, y = delta_load_simple, col = as.factor(month(Date))), size = 4)+
-  geom_ribbon(aes(ymin = delta_load_spatial -loq*Flow_cms, ymax = delta_load_spatial + loq*Flow_cms, col = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
+  #geom_ribbon(aes(ymin = delta_load_spatial -loq_load, ymax = delta_load_spatial + loq_load, col = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         panel.background = element_blank()) +
