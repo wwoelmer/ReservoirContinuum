@@ -163,20 +163,31 @@ long_both <- new
 long_both$compare <- paste0(long_both$Reservoir, "", long_both$axis)
 long_both$compare <- factor(long_both$compare, levels = c("BVRspace", "FCRspace", "BVRtime",  "FCRtime"  ))
 
+vars_keep <- c( 'CV_chl',  'CV_SRP',  'CV_NO3',  
+                'CV_NH4',  'CV_TP',   'CV_TN',    
+                'CV_A',    'CV_T',    'CV_DOC')
+
+long_both <- long_both[long_both$variable %in% vars_keep,]
 
 ### space time reservoir box plots
 # use stat compare means
 ggplot(long_both, aes(x = as.factor(axis), y = cv, fill = Reservoir)) +
-  geom_boxplot() +
+  geom_boxplot(outlier.shape = NA) +
   geom_blank(aes(y=ymax, x = as.factor(axis)))+
   facet_wrap(~variable, scales = 'free') +
-  geom_point(position=position_jitterdodge(),alpha=0.3) + 
-  stat_compare_means(label = "p.signif", label.y.npc = 0.75) + 
+  geom_point(position=position_jitterdodge(),alpha=0.7, size = 2, aes(color = Reservoir)) + 
+  stat_compare_means(label = "p.signif", label.y.npc = 0.75, size = 4) + 
   stat_compare_means(aes(group = axis), 
                      label = "p.signif", label.y.npc = 0.95,
+                     size = 4,
                      label.x.npc = 0.5) +
   scale_fill_manual(values = r_col) +
-  theme_classic(base_size = 12) +
+  scale_color_manual(values = r_col) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 14),
+        axis.text = element_text(size = 14)) +  
   xlab('Axis') +
   ylab('Coefficient of Variation (CV)')
 
@@ -235,6 +246,28 @@ long_both %>%
       step_increase = 0.09,
       test = "wilcox.test", 
       #test.args = list(exact = FALSE),
+      map_signif_level = TRUE) +
+      scale_fill_manual(values = r_col) +
+      theme(panel.grid.major = element_blank(), 
+            panel.grid.minor = element_blank(),
+            axis.text.x = element_text(hjust = 0),
+            axis.ticks.x = element_blank()) +
+      scale_x_discrete(labels = c('Space', '', 'Time', '')) +
+      xlab('Axis') +
+      ylab('Coefficient of Variation (CV)')}
+
+
+long_both %>% 
+  mutate(gr=interaction(Reservoir, axis, sep = " ")) %>% 
+  mutate(gr = factor(gr, levels = c("BVR space", "FCR space", "BVR time",  "FCR time"  ))) %>% 
+  {ggplot(data=.,aes(x = gr,  y = cv, fill = Reservoir)) +
+      geom_boxplot() +
+      facet_wrap(~variable, scales = 'free') +
+      geom_point(position=position_jitterdodge(),alpha=0.3) + 
+      ggsignif::geom_signif(comparisons = list(c('FCR space', 'BVR space'),
+                                               c('FCR time', 'BVR time')),
+      step_increase = 0.09,
+      test = "wilcox.test", 
       map_signif_level = TRUE) +
       scale_fill_manual(values = r_col) +
       theme(panel.grid.major = element_blank(), 
