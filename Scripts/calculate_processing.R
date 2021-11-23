@@ -91,7 +91,15 @@ for(j in 1:length(vars)){
        temp3$delta[temp3$Site==50] <- temp3$value[temp3$Site==50] - temp3$value[temp3$Site==45]
        #temp3$delta_simple <- temp3$value[temp3$Site==50] - mean(c(temp3$value[temp3$Site==100], temp3$value[temp3$Site==200]), na.rm = TRUE)
        temp3$delta_simple <- temp3$value[temp3$Site==50] - temp3$value[temp3$Site==100] - temp3$value[temp3$Site==200]
-       #temp3$delta_cumu <- sum(temp3$delta, na.rm = TRUE)
+
+       ## and calculate the delta distance
+       temp3$delta_distance[temp3$Site==100] <- 0
+       temp3$delta_distance[temp3$Site==200] <- 0
+       temp3$delta_distance[temp3$Site==20] <- temp3$distance_m[temp3$Site==20] - temp3$distance_m[temp3$Site==100]
+       temp3$delta_distance[temp3$Site==30] <- temp3$distance_m[temp3$Site==30] - temp3$distance_m[temp3$Site==200]
+       temp3$delta_distance[temp3$Site==1] <-  temp3$distance_m[temp3$Site==1] -  temp3$distance_m[temp3$Site==20]
+       temp3$delta_distance[temp3$Site==45] <- temp3$distance_m[temp3$Site==45] - mean(c(temp3$distance_m[temp3$Site==1], temp3$distance_m[temp3$Site==30]), na.rm = TRUE)
+       temp3$delta_distance[temp3$Site==50] <- temp3$distance_m[temp3$Site==50] - temp3$distance_m[temp3$Site==45]
      }
      if(temp3$Reservoir=='FCR'){
        temp3$delta[temp3$Site==99] <- 0
@@ -103,9 +111,16 @@ for(j in 1:length(vars)){
        temp3$delta[temp3$Site==50] <- temp3$value[temp3$Site==50] - temp3$value[temp3$Site==45]
        #temp3$delta_simple <- temp3$value[temp3$Site==50] - mean(c(temp3$value[temp3$Site==99], temp3$value[temp3$Site==200]), na.rm = TRUE)
        temp3$delta_simple <- temp3$value[temp3$Site==50] - temp3$value[temp3$Site==99] - temp3$value[temp3$Site==200]
-       #temp3$cumu <- sum(temp3$delta, na.rm = TRUE)
+
        
-       
+       ## and calculate the delta distance
+       temp3$delta_distance[temp3$Site==99] <- 0
+       temp3$delta_distance[temp3$Site==200] <- 0
+       temp3$delta_distance[temp3$Site==20] <- temp3$distance_m[temp3$Site==20] - (temp3$distance_m[temp3$Site==99] - temp3$distance_m[temp3$Site==200])
+       temp3$delta_distance[temp3$Site==30] <- temp3$distance_m[temp3$Site==30] - temp3$distance_m[temp3$Site==20]
+       temp3$delta_distance[temp3$Site==45] <- temp3$distance_m[temp3$Site==45] - temp3$distance_m[temp3$Site==30]
+       temp3$delta_distance[temp3$Site==50] <- temp3$distance_m[temp3$Site==50] - temp3$distance_m[temp3$Site==45]
+
      }  
     test <- rbind(test, temp3)   
    }
@@ -132,7 +147,7 @@ test$loq[test$variable=='DOC_mgL'] <- 0.411
 # because all values are less than 50, the accuracy is 1% of reading +/- 0.05 uS/cm
 # taken from manual for conductivity sensor
 sp <- test[test$distance_from_stream > 0 & test$variable=='sp_cond',]
-hist(sp$value)
+#hist(sp$value)
 
 for(i in 1:nrow(test)){
   if(test$variable[i]=='sp_cond'){
@@ -142,59 +157,80 @@ for(i in 1:nrow(test)){
   }
 }
 
-ggplot(data = test[test$distance_from_stream >0 & test$Reservoir=='BVR',], aes(x = distance_m, y = delta)) +
+b <- ggplot(data = test[test$distance_from_stream >0 & test$Reservoir=='BVR',], aes(x = distance_m, y = delta)) +
   facet_wrap(~variable, scales = 'free') +
   geom_line(aes(col = as.factor(month(Date)))) +
   geom_hline(aes(yintercept = 0)) +
   geom_point(aes(x = 1100, y = delta_simple, col = as.factor(month(Date))), size = 4)+
-  geom_ribbon(aes(ymin = delta -loq, ymax = delta + loq, col = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
+  geom_ribbon(aes(ymin = delta -loq, ymax = delta + loq, fill = as.factor(month(Date)), col = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  theme_bw() +
   theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank())+
-  ylab('Delta from upstream') +
-  xlab('Distance from upstream (m)')
+        panel.grid.minor = element_blank()) +
+  ylab('Delta from upstream (concentration)') +
+  xlab('Distance from upstream (m)') +
+  ggtitle('Falling Creek Reservoir')
 
 
-ggplot(data = test[test$distance_from_stream >0 & test$Reservoir=='FCR',], aes(x = distance_m, y = delta)) +
+
+f <- ggplot(data = test[test$distance_from_stream >0 & test$Reservoir=='FCR',], aes(x = distance_m, y = delta)) +
   facet_wrap(~variable, scales = 'free') +
   geom_line(aes(col = as.factor(month(Date)))) +
   geom_hline(aes(yintercept = 0)) +
   geom_point(aes(x = 600, y = delta_simple, col = as.factor(month(Date))), size = 4)+
-  geom_ribbon(aes(ymin = delta -loq, ymax = delta + loq, col = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
+  geom_ribbon(aes(ymin = delta -loq, ymax = delta + loq, fill = as.factor(month(Date)), col = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  theme_bw() +
   theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank()) +
-  ylab('Delta from upstream') +
-  xlab('Distance from upstream (m)')
+        panel.grid.minor = element_blank()) +
+  ylab('Delta from upstream (concentration)') +
+  xlab('Distance from upstream (m)') +
+  ggtitle('Beaverdam Reservoir')
 
+ggarrange(b, f, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
 
 ##### calculate normalized distance 
 test <- test %>% 
-  mutate(delta_norm = (delta/distance_m)) %>% 
+  mutate(delta_norm = (delta/delta_distance)) %>% 
   mutate(norm_distance = ifelse(Reservoir=='BVR', distance_m/1117, distance_m/642))
 
 ggplot(data = test[test$distance_from_stream>0,], aes(x = distance_m, y = delta_norm)) +
   facet_wrap(~variable, scales = 'free') +
   geom_line(aes(col = as.factor(month(Date)), linetype = Reservoir)) +
   geom_hline(aes(yintercept = 0)) +
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
   #geom_point(aes(x = 600, y = delta_simple, col = as.factor(month(Date))), size = 4) +
-  ylab('Delta over distance (ug/L / m)') +
-  xlab('Normalized distance (% of total reservoir length)')
-  
+  ylab('Delta concentration over delta distance') 
+
 ggplot(data = test[test$distance_from_stream>0,], aes(x = norm_distance, y = delta_norm)) +
   facet_wrap(~variable, scales = 'free') +
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
   geom_line(aes(col = as.factor(month(Date)), linetype = Reservoir)) +
-  geom_hline(aes(yintercept = 0))
+  geom_hline(aes(yintercept = 0)) +
+  xlab('Normalized distance (% of total reservoir length)') +
+  ylab('Delta concentration over delta distance') 
+
+
 
 ggplot(data = test[test$distance_from_stream>0 & test$Reservoir=='FCR',], aes(x = distance_m, y = delta_norm)) +
   facet_wrap(~variable, scales = 'free') +
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
   geom_line(aes(col = as.factor(month(Date)))) +
-  geom_hline(aes(yintercept = 0))
+  geom_hline(aes(yintercept = 0)) +
+  ylab('Delta concentration over delta distance') +
+  ggtitle('Falling Creek Reservoir')
+
   
 ggplot(data = test[test$distance_from_stream>0 & test$Reservoir=='BVR',], aes(x = distance_m, y = delta_norm)) +
   facet_wrap(~variable, scales = 'free') +
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
   geom_line(aes(col = as.factor(month(Date)))) +
-  geom_hline(aes(yintercept = 0)) 
+  geom_hline(aes(yintercept = 0)) +
+  ylab('Delta concentration over delta distance') +
+  ggtitle('Beaverdam Reservoir')
+
   
   
 # now calculate q*concentration
@@ -298,38 +334,65 @@ for(i in 1:nrow(test_load)){
 }
 
 test_load$loq_load <- test_load$loq*test_load$Flow_cms
-vars_process <- c('T', 'A', 'HIX', 'BIX',
-                  'DOC_mgL', 'Chla_ugL', 
+vars_process <- c('T', 'A', 'DOC_mgL', 
                   'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
-                  'TN_ugL', 'TP_ugL', 'sp_cond')
+                  'Chla_ugL', 'TN_ugL', 'TP_ugL',
+                   'sp_cond')
 test_load <- test_load[test_load$variable %in% vars_process,]
 
-ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$Reservoir=='BVR',], aes(x = distance_m, y = delta_load_spatial)) +
-  facet_wrap(~variable, scales = 'free') +
+## set the order of hte plots
+levels <- c('T', 'A', 'DOC_mgL', 
+                  'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
+                  'Chla_ugL', 'TN_ugL', 'TP_ugL',
+                  'sp_cond')
+labels <- c('T-autoch',  'A-alloch', 'DOC',
+            'NH4', 'NO3', 'SRP',
+            'Chl-a', 'TN', 'TP') #'BIX-autoch','HIX-alloch',
+#'TN_TP', 'DP_TP', 'DN_TN')
+names(labels) <- levels
+test_load$variable <- factor(test_load$variable, levels = levels)
+
+
+
+
+bl <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$Reservoir=='BVR',], aes(x = distance_m, y = delta_load_spatial)) +
+  facet_wrap(~variable, scales = 'free_y', ncol = 3) +
   geom_line(aes(col = as.factor(month(Date)))) +
   geom_hline(aes(yintercept = 0)) +
   geom_point(aes(x = 1100, y = delta_load_simple, col = as.factor(month(Date))), size = 4)+
-  #geom_ribbon(aes(ymin = delta_load_spatial -loq_load, ymax = delta_load_spatial + loq_load, col = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
+  #geom_ribbon(aes(ymin = delta_load_spatial -loq_load, ymax = delta_load_spatial + loq_load, 
+  #                col = as.factor(month(Date)), fill = as.factor(month(Date))), 
+  #            alpha = 0.1, linetype = 0)+
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  theme_bw() +
   theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank())+
-  ylab('Delta load from upstream') +
-  xlab('Distance from upstream (m)')
+        panel.grid.minor = element_blank()) +
+  ylab('Delta load from upstream (concentration*discharge)') +
+  xlab('Distance from upstream (m)') +
+  ggtitle('Beaverdam Reservoir')
 
 
-ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$Reservoir=='FCR',], aes(x = distance_m, y = delta_load_spatial)) +
-  facet_wrap(~variable, scales = 'free') +
+fl <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$Reservoir=='FCR',], aes(x = distance_m, y = delta_load_spatial)) +
+  facet_wrap(~variable, scales = 'free_y', ncol = 3) +
   geom_line(aes(col = as.factor(month(Date)))) +
   geom_hline(aes(yintercept = 0)) +
   geom_point(aes(x = 600, y = delta_load_simple, col = as.factor(month(Date))), size = 4)+
-  #geom_ribbon(aes(ymin = delta_load_spatial -loq_load, ymax = delta_load_spatial + loq_load, col = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
+#  geom_ribbon(aes(ymin = delta_load_spatial -loq_load, ymax = delta_load_spatial + loq_load, 
+#                  col = as.factor(month(Date)), fill = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  theme_bw() +
   theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank()) +
-  ylab('Delta load from upstream') +
-  xlab('Distance from upstream (m)')
+        panel.grid.minor = element_blank()) +
+  ylab('Delta load from upstream (concentration*discharge)') +
+  xlab('Distance from upstream (m)') +
+  ggtitle('Falling Creek Reservoir')
+
+ggarrange(bl, fl, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
 
 
+#################################################################################################################
 # how do BVR and FCR flow quantities compare
 inf <- long_load_2[long_load_2$Site > 50,]
 inf <- inf %>% 
