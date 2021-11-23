@@ -18,7 +18,7 @@ data$connectivity <- as.factor(data$connectivity)
 data <- data %>% select(Date, everything(),-DateTime, -Depth_m, -(DIC_mgL:Flag_DN))
 
 # some SRP values are 0, so add very very small value to these for dividing by this value later
-min_val <- min(data[data$SRP_ugL>0,"SRP_ugL"])/100
+min_val <- min(data[data$SRP_ugL>0,"SRP_ugL"])
 data$SRP_ugL <- data$SRP_ugL + min_val
 
 
