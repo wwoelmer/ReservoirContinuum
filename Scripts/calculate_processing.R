@@ -72,6 +72,8 @@ dates <- unique(long$Date)
 res <- unique(long$Reservoir)
 dates <- dates[-6] # remove September date because we don't have inflow data
 
+
+### concentration delta 
 test <- NA
 
 for(j in 1:length(vars)){
@@ -443,6 +445,103 @@ fl <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$Rese
   ggtitle('Falling Creek Reservoir')
 
 ggarrange(bl, fl, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
+
+
+##################################################################################################################
+########################## and the ug/day calculations
+# convert delta_load_* from ug/L*m3/s to ug/day: *1000 to go from L -> m3 and *86400 to go from sec -> day
+test_load$delta_load_spatial_ugday <- test_load$delta_load_spatial*1000*86400
+test_load$delta_load_simple_ugday <- test_load$delta_load_simple*1000*86400
+
+
+bl <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$Reservoir=='BVR',], 
+             aes(x = distance_m, y = delta_load_spatial_ugday)) +
+  facet_wrap(~variable, scales = 'free_y', ncol = 3) +
+  geom_line(aes(col = as.factor(month(Date)))) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_point(aes(col = as.factor(month(Date))), size = 2) +
+  geom_point(aes(x = 1200, y = delta_load_simple_ugday, col = as.factor(month(Date))), size = 4)+
+  #geom_ribbon(aes(ymin = delta_load_spatial -loq_load, ymax = delta_load_spatial + loq_load, 
+  #                col = as.factor(month(Date)), fill = as.factor(month(Date))), 
+  #            alpha = 0.1, linetype = 0)+
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  ylab('Delta load from upstream (ug/day)') +
+  xlab('Distance from upstream (m)') +
+  ggtitle('Beaverdam Reservoir')
+bl
+
+fl <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$Reservoir=='FCR',], 
+             aes(x = distance_m, y = delta_load_spatial_ugday)) +
+  facet_wrap(~variable, scales = 'free_y', ncol = 3) +
+  geom_line(aes(col = as.factor(month(Date)))) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_point(aes(col = as.factor(month(Date))), size = 2) +
+  geom_point(aes(x = 710, y = delta_load_simple_ugday, col = as.factor(month(Date))), size = 4)+
+  #  geom_ribbon(aes(ymin = delta_load_spatial -loq_load, ymax = delta_load_spatial + loq_load, 
+  #                  col = as.factor(month(Date)), fill = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  ylab('Delta load from upstream (ug/day)') +
+  xlab('Distance from upstream (m)') +
+  ggtitle('Falling Creek Reservoir')
+
+ggarrange(bl, fl, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
+
+
+##################################################################################################################
+########################## take mass/day and normalize by specific conductance
+
+test_load <- test_load %>% 
+  group_by(Date, Reservoir, Site) %>% 
+  mutate(delta_load_spatial_ratio = delta_load_spatial*value[variable=='sp_cond']) %>% 
+  mutate(delta_load_simple_ratio = delta_load_simple*value[variable=='sp_cond'])
+
+b_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$variable!='sp_cond'  & test_load$Reservoir=='BVR',], 
+             aes(x = distance_m, y = delta_load_spatial_ratio)) +
+  facet_wrap(~variable, scales = 'free_y', ncol = 3) +
+  geom_line(aes(col = as.factor(month(Date)))) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_point(aes(col = as.factor(month(Date))), size = 2) +
+  geom_point(aes(x = 1200, y = delta_load_simple_ratio, col = as.factor(month(Date))), size = 4)+
+  #geom_ribbon(aes(ymin = delta_load_spatial -loq_load, ymax = delta_load_spatial + loq_load, 
+  #                col = as.factor(month(Date)), fill = as.factor(month(Date))), 
+  #            alpha = 0.1, linetype = 0)+
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') +
+  scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  ylab('Delta mass/sp cond (ug/L*m3/s*us/cm)') +
+  xlab('Distance from upstream (m)') +
+  ggtitle('Beaverdam Reservoir')
+
+f_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$variable!='sp_cond' & test_load$Reservoir=='FCR',], 
+             aes(x = distance_m, y = delta_load_spatial_ratio)) +
+  facet_wrap(~variable, scales = 'free_y', ncol = 3) +
+  geom_line(aes(col = as.factor(month(Date)))) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_point(aes(col = as.factor(month(Date))), size = 2) +
+  geom_point(aes(x = 710, y = delta_load_simple_ratio, col = as.factor(month(Date))), size = 4)+
+  #  geom_ribbon(aes(ymin = delta_load_spatial -loq_load, ymax = delta_load_spatial + loq_load, 
+  #                  col = as.factor(month(Date)), fill = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') +
+  scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  ylab('Delta mass/sp cond (ug/L*m3/s*us/cm)') +
+  xlab('Distance from upstream (m)') +
+  ggtitle('Falling Creek Reservoir')
+
+ggarrange(b_sp, f_sp, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
+
 
 
 #################################################################################################################
