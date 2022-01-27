@@ -82,6 +82,8 @@ for(j in 1:length(vars)){
    temp2 <- temp[temp$Date==dates[k],]
    for(m in 1:length(res)){
      temp3 <- temp2[temp2$Reservoir==res[m],]
+     temp3 <- temp3 %>% distinct(temp3$Site, .keep_all = TRUE)
+     
      if(temp3$Reservoir=='BVR'){
        # calculate flow-weighting of inflows
        tot_flow <- temp3$Flow_cms[temp3$Site==100] + temp3$Flow_cms[temp3$Site==200] 
@@ -498,18 +500,79 @@ ggarrange(bl, fl, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right')
 ##################################################################################################################
 ########################## take mass/day and normalize by specific conductance
 
-test_load <- test_load %>% 
-  group_by(Date, Reservoir, Site) %>% 
-  mutate(delta_load_spatial_ratio = delta_load_spatial*value[variable=='sp_cond']) %>% 
-  mutate(delta_load_simple_ratio = delta_load_simple*value[variable=='sp_cond'])
+# go through loop again and divided by sp cond 
+#/temp3$value[temp3$Site==20 & temp3$variable=='sp_cond']
+
+test_load <- NA
+
+for(j in 1:length(vars)){
+  temp <- long_load_2[long_load_2$variable==vars[j]|long_load_2$variable=='sp_cond',]
+  for (k in 1:length(dates)) {
+    temp2 <- temp[temp$Date==dates[k],]
+    for(m in 1:length(res)){
+      temp3 <- temp2[temp2$Reservoir==res[m],]
+      if(temp3$Reservoir=='BVR'){
+        temp3$delta_load_spatial[temp3$Site==100] <- 0
+        temp3$delta_load_spatial[temp3$Site==200] <- 0
+        temp3$delta_load_spatial[temp3$Site==20] <- temp3$load[temp3$Site==20 & temp3$variable==vars[j]]/temp3$value[temp3$Site==20 & temp3$variable=='sp_cond'] - temp3$load[temp3$Site==100 & temp3$variable==vars[j]]/temp3$value[temp3$Site==100 & temp3$variable=='sp_cond']
+        temp3$delta_load_spatial[temp3$Site==30] <- temp3$load[temp3$Site==30 & temp3$variable==vars[j]]/temp3$value[temp3$Site==30 & temp3$variable=='sp_cond'] - temp3$load[temp3$Site==200 & temp3$variable==vars[j]]/temp3$value[temp3$Site==200 & temp3$variable=='sp_cond']
+        temp3$delta_load_spatial[temp3$Site==1] <- temp3$load[temp3$Site==1 & temp3$variable==vars[j]]/temp3$value[temp3$Site==1 & temp3$variable=='sp_cond'] - temp3$load[temp3$Site==20 & temp3$variable==vars[j]]/temp3$value[temp3$Site==20 & temp3$variable=='sp_cond']
+        temp3$delta_load_spatial[temp3$Site==45] <- temp3$load[temp3$Site==45 & temp3$variable==vars[j]]/temp3$value[temp3$Site==45 & temp3$variable=='sp_cond'] - mean(c(temp3$load[temp3$Site==1 & temp3$variable==vars[j]]/temp3$value[temp3$Site==1 & temp3$variable=='sp_cond'], temp3$load[temp3$Site==30 & temp3$variable==vars[j]]/temp3$value[temp3$Site==30 & temp3$variable=='sp_cond']), na.rm = TRUE)
+        #temp3$delta_load_spatial[temp3$Site==45] <- temp3$load[temp3$Site==45] - (temp3$load[temp3$Site==1] - temp3$load[temp3$Site==30])
+        temp3$delta_load_spatial[temp3$Site==50] <- temp3$load[temp3$Site==50 & temp3$variable==vars[j]]/temp3$value[temp3$Site==50 & temp3$variable=='sp_cond'] - temp3$load[temp3$Site==45 & temp3$variable==vars[j]]/temp3$value[temp3$Site==45 & temp3$variable=='sp_cond']
+        temp3$delta_load_simple <- temp3$load[temp3$Site==50 & temp3$variable==vars[j]]/temp3$value[temp3$Site==50 & temp3$variable=='sp_cond'] - sum(temp3$load[temp3$Site==100& temp3$variable==vars[j]]/temp3$value[temp3$Site==100 & temp3$variable=='sp_cond'], temp3$load[temp3$Site==200 & temp3$variable==vars[j]]/temp3$value[temp3$Site==200 & temp3$variable=='sp_cond'], na.rm = TRUE)
+        
+      }
+      if(temp3$Reservoir=='FCR'){
+        temp3$delta_load_spatial[temp3$Site==99] <- 0
+        temp3$delta_load_spatial[temp3$Site==200] <- 0
+        temp3$delta_load_spatial[temp3$Site==20] <- temp3$load[temp3$Site==20 & temp3$variable==vars[j]]/temp3$value[temp3$Site==20 & temp3$variable=='sp_cond'] - sum(temp3$load[temp3$Site==99 & temp3$variable==vars[j]]/temp3$value[temp3$Site==99 & temp3$variable=='sp_cond'], temp3$load[temp3$Site==200 & temp3$variable==vars[j]]/temp3$value[temp3$Site==200 & temp3$variable=='sp_cond'], na.rm = TRUE)
+        temp3$delta_load_spatial[temp3$Site==30] <- temp3$load[temp3$Site==30 & temp3$variable==vars[j]]/temp3$value[temp3$Site==30 & temp3$variable=='sp_cond'] - temp3$load[temp3$Site==20 & temp3$variable==vars[j]]/temp3$value[temp3$Site==20 & temp3$variable=='sp_cond']
+        temp3$delta_load_spatial[temp3$Site==45] <- temp3$load[temp3$Site==45 & temp3$variable==vars[j]]/temp3$value[temp3$Site==45 & temp3$variable=='sp_cond'] - temp3$load[temp3$Site==30 & temp3$variable==vars[j]]/temp3$value[temp3$Site==30 & temp3$variable=='sp_cond']
+        temp3$delta_load_spatial[temp3$Site==50] <- temp3$load[temp3$Site==50 & temp3$variable==vars[j]]/temp3$value[temp3$Site==50 & temp3$variable=='sp_cond'] - temp3$load[temp3$Site==45 & temp3$variable==vars[j]]/temp3$value[temp3$Site==45 & temp3$variable=='sp_cond']
+        temp3$delta_load_simple <- temp3$load[temp3$Site==50 & temp3$variable==vars[j]]/temp3$value[temp3$Site==50 & temp3$variable=='sp_cond'] - sum(temp3$load[temp3$Site==99 & temp3$variable==vars[j]]/temp3$value[temp3$Site==99 & temp3$variable=='sp_cond'], temp3$load[temp3$Site==200 & temp3$variable==vars[j]]/temp3$value[temp3$Site==200 & temp3$variable=='sp_cond'], na.rm = TRUE)
+        
+        
+      }  
+      test_load <- rbind(test_load, as.data.frame(temp3))   
+    }
+  }
+}
+
+test_load <- test_load[-1,]
+exclude <- c('FCR_102', 'FCR_101', 'FCR_100', 'FCR_1')
+test_load <- test_load[!(test_load$site_res %in% exclude),]
+
+vars_process <- c('T', 'A', 'DOC_mgL', 
+                  'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
+                  'Chla_ugL', 'TN_ugL', 'TP_ugL',
+                  'sp_cond')
+test_load <- test_load[test_load$variable %in% vars_process,]
+
+## set the order of hte plots
+levels <- c('T', 'A', 'DOC_mgL', 
+            'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
+            'Chla_ugL', 'TN_ugL', 'TP_ugL',
+            'sp_cond')
+labels <- c('T-autoch',  'A-alloch', 'DOC',
+            'NH4', 'NO3', 'SRP',
+            'Chl-a', 'TN', 'TP',
+            "Sp Cond")
+names(labels) <- levels
+test_load$variable <- factor(test_load$variable, levels = levels)
+
+#test_load <- test_load %>% 
+#  group_by(Date, Reservoir, Site) %>% 
+#  mutate(delta_load_spatial_ratio = delta_load_spatial/value[variable=='sp_cond']) %>% 
+#  mutate(delta_load_simple_ratio = delta_load_simple/value[variable=='sp_cond'])
 
 b_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$variable!='sp_cond'  & test_load$Reservoir=='BVR',], 
-             aes(x = distance_m, y = delta_load_spatial_ratio)) +
+             aes(x = distance_m, y = delta_load_spatial)) +
   facet_wrap(~variable, scales = 'free_y', ncol = 3) +
   geom_line(aes(col = as.factor(month(Date)))) +
   geom_hline(aes(yintercept = 0)) +
   geom_point(aes(col = as.factor(month(Date))), size = 2) +
-  geom_point(aes(x = 1200, y = delta_load_simple_ratio, col = as.factor(month(Date))), size = 4)+
+  geom_point(aes(x = 1200, y = delta_load_simple, col = as.factor(month(Date))), size = 4)+
   #geom_ribbon(aes(ymin = delta_load_spatial -loq_load, ymax = delta_load_spatial + loq_load, 
   #                col = as.factor(month(Date)), fill = as.factor(month(Date))), 
   #            alpha = 0.1, linetype = 0)+
@@ -518,17 +581,17 @@ b_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$va
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
-  ylab('Delta mass/sp cond (ug/L*m3/s*us/cm)') +
+  ylab('Delta mass/sp cond (µg m3 cm / L s µs)') +
   xlab('Distance from upstream (m)') +
   ggtitle('Beaverdam Reservoir')
 
 f_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$variable!='sp_cond' & test_load$Reservoir=='FCR',], 
-             aes(x = distance_m, y = delta_load_spatial_ratio)) +
+             aes(x = distance_m, y = delta_load_spatial)) +
   facet_wrap(~variable, scales = 'free_y', ncol = 3) +
   geom_line(aes(col = as.factor(month(Date)))) +
   geom_hline(aes(yintercept = 0)) +
   geom_point(aes(col = as.factor(month(Date))), size = 2) +
-  geom_point(aes(x = 710, y = delta_load_simple_ratio, col = as.factor(month(Date))), size = 4)+
+  geom_point(aes(x = 710, y = delta_load_simple, col = as.factor(month(Date))), size = 4)+
   #  geom_ribbon(aes(ymin = delta_load_spatial -loq_load, ymax = delta_load_spatial + loq_load, 
   #                  col = as.factor(month(Date)), fill = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
   scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') +
@@ -536,12 +599,13 @@ f_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$va
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
-  ylab('Delta mass/sp cond (ug/L*m3/s*us/cm)') +
+  ylab('Delta mass/sp cond (µg m3 cm / L s µs)') +
   xlab('Distance from upstream (m)') +
   ggtitle('Falling Creek Reservoir')
 
 ggarrange(b_sp, f_sp, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
 
+#ggplot(data = test_load[test_load$variable=='sp_cond' & test_load$Reservoir=='FCR',], aes(x = Date, y = value)) + geom_point(aes(color = as.factor(Site)))
 
 
 #################################################################################################################
