@@ -8,59 +8,13 @@ library(ggpubr)
 
 r_col <- c('olivedrab3', 'royalblue1')
 
-
-#data <- read.csv('./Data/continuum_pf.csv')
-data <-read.csv('./Data/continuum_ww.csv')
+data <-read.csv('./Data/continuum_data.csv')
 data$Date <- as.Date(data$DateTime)
-data$connectivity <- as.factor(data$connectivity)
 
-data <- data %>% select(Date, everything(),-DateTime, -Depth_m, -(DIC_mgL:Flag_DN))
-data <- data %>% mutate(TN_TP = TN_ugL/TP_ugL) %>% 
-  mutate(DP_TP = SRP_ugL/TP_ugL) %>% 
-  mutate(DN_TN = (NH4_ugL + NO3NO2_ugL)/TN_ugL)
-
-
-data$distance_from_stream <- 'NA'
-data <- data %>% unite('res_site', Reservoir:Site, remove = FALSE)
-stream_sites <- c('FCR_100', 'FCR_200', 'FCR_102', 'FCR_101', 'FCR_99', 'BVR_100', 'BVR_200', 'FCR_1')
-riv_sites <- c('FCR_20', 'BVR_20', 'BVR_30') 
-trans_sites <- c('BVR_1', 'BVR_45', 'FCR_30', 'FCR_45')
-lac_sites <- c('FCR_50', 'BVR_50')
-
-for (i in 1:nrow(data)) {
-  if(data$res_site[i] %in% stream_sites){
-    data$distance_from_stream[i] <- '0'
-  }else if(data$res_site[i] %in% riv_sites){
-    data$distance_from_stream[i] <- '1'
-  }else if(data$res_site[i] %in% trans_sites){
-    data$distance_from_stream[i] <- '2'
-  }else if(data$res_site[i] %in% lac_sites){
-    data$distance_from_stream[i] <- '3'
-  }
-}
 
 data$distance_from_stream <- as.numeric(data$distance_from_stream)
 in_reservoir <- c( '20', '30', '45', '50') # site 01 is in res for BVR and in stream for FCR 
 in_stream <- c('99', '100', '101', '102', '200')
-
-### read in distance data from arcgis
-dist <- read.csv('./Data/rc_coordinates_100only.csv')
-dist <- dist %>% select(Reservoir, Site, distance_m)
-
-data <- left_join(data, dist)
-
-cond <- read.csv('./Data/rc_temp_conductivity.csv')
-cond <- cond %>% 
-  select(Reservoir, DateTime, Site, Sp.Cond...Micro.S., Notes) %>% 
-  rename(sp_cond = Sp.Cond...Micro.S.)
-cond$Date <- as.Date(cond$DateTime)
-cond$Site <- as.numeric(gsub("[A-z]", "", cond$Site)) # Remove letters
-cond$Letter <- gsub("[0-9]", "", cond$Site) # Remove numbers
-cond <- cond %>% 
-  select(Site, Reservoir, Date, sp_cond)
-
-data <- left_join(data, cond)
-#write.csv(data, './Data/intermediate_dataset.csv', row.names = FALSE)
 
 long <- data %>%   
   select(Site, Reservoir, Date, Flow_cms, distance_from_stream, TN_ugL:Chla_ugL, A:BIX, TN_TP:DN_TN, sp_cond, distance_m) %>% 
