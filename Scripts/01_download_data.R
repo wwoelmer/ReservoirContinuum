@@ -19,3 +19,7 @@ try(download.file(chem_all, destfile = paste0("./Data/raw_data/chem_all_edi.csv"
 spcond_all <- "https://pasta.lternet.edu/package/data/eml/edi/198/9/b3bd353312f9e37ca392e2a5315cc9da"
 try(download.file(spcond_all, destfile = paste0("./Data/raw_data/spcond_edi.csv"), 
                   method = "curl"))
+
+met <-  "https://pasta.lternet.edu/package/data/eml/edi/389/6/a5524c686e2154ec0fd0459d46a7d1eb" 
+try(download.file(met, destfile = paste0("./Data/raw_data/met_edi.csv"), 
+                  method = "curl"))
