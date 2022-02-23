@@ -36,7 +36,8 @@ chem <- chem %>%
 chem <- chem %>% 
   mutate(TN_TP = TN_ugL/TP_ugL) %>% 
   mutate(DP_TP = SRP_ugL/TP_ugL) %>% 
-  mutate(DN_TN = (NH4_ugL + NO3NO2_ugL)/TN_ugL)
+  mutate(DN_TN = (NH4_ugL + NO3NO2_ugL)/TN_ugL) %>% 
+  mutate(DN_DP = (NH4_ugL + NO3NO2_ugL)/SRP_ugL)
 
 ###################
 # read in chl
