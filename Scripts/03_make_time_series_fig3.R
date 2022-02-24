@@ -105,20 +105,91 @@ thorn <- thorn %>%
   mutate(total_p = mean(TP_ugL, na.rm = TRUE)) %>% 
   mutate(soluble_p = mean(SRP_ugL, na.rm = TRUE)) %>% 
   mutate(soluble_n = mean((NH4_ugL + NO3NO2_ugL), na.rm = TRUE)) %>% 
-  select(res_site, Reservoir, Site, distance_from_stream, total_n:soluble_n) %>% 
+  mutate(sd_total_n = sd(TN_ugL, na.rm = TRUE)) %>% 
+  mutate(sd_total_p = sd(TP_ugL, na.rm = TRUE)) %>% 
+  mutate(sd_soluble_p = sd(SRP_ugL, na.rm = TRUE)) %>% 
+  mutate(sd_soluble_n = sd((NH4_ugL + NO3NO2_ugL), na.rm = TRUE)) %>% 
+  select(res_site, Reservoir, Site, distance_from_stream, total_n:sd_soluble_n) %>% 
   distinct(res_site, .keep_all = TRUE)
 
-thorn <- thorn %>% 
-  pivot_longer(total_n:soluble_n, names_to = 'variable', values_to = 'value')
-
-ggplot(data = thorn, aes(x = distance_from_stream, y = value, col = Reservoir)) +
+n <- ggplot(thorn, aes(x = distance_from_stream, y = total_n, color = Reservoir)) +
   geom_point(size = 2) +
+  geom_line(aes(color = Reservoir), size = 2) +
+  geom_ribbon(data = thorn[thorn$Reservoir=='FCR', ], aes(ymin = total_n - sd_total_n, ymax = total_n + sd_total_n, fill = Reservoir), alpha = 0.2) +
+  geom_ribbon(data = thorn[thorn$Reservoir=='BVR', ], aes(ymin = total_n - sd_total_n, ymax = total_n + sd_total_n, fill = Reservoir), alpha = 0.2) +
+  xlab('Distance from stream (m)') +
+  ylab('Concentration') +
+  scale_color_manual(values = r_col) +
+  scale_fill_manual(values = r_col) +
+  theme_bw() +
+  labs(col = 'Reservoir') +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  ggtitle('Total Nitrogen')
+
+
+p <- ggplot(thorn, aes(x = distance_from_stream, y = total_p, color = Reservoir)) +
+  geom_point(size = 2) +
+  geom_line(aes(color = Reservoir), size = 2) +
+  geom_ribbon(data = thorn[thorn$Reservoir=='FCR', ], aes(ymin = total_p - sd_total_p, ymax = total_p + sd_total_p, fill = Reservoir), alpha = 0.2) +
+  geom_ribbon(data = thorn[thorn$Reservoir=='BVR', ], aes(ymin = total_p - sd_total_p, ymax = total_p + sd_total_p, fill = Reservoir), alpha = 0.2) +
+  xlab('Distance from stream (m)') +
+  ylab('Concentration') +
+  scale_color_manual(values = r_col) +
+  scale_fill_manual(values = r_col) +
+  theme_bw() +
+  labs(col = 'Reservoir') +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())  +
+  ggtitle('Total Phosphorus')
+
+
+sp <- ggplot(thorn, aes(x = distance_from_stream, y = soluble_p, color = Reservoir)) +
+  #geom_point(size = 2) +
+  geom_line(aes(color = Reservoir), size = 2, linetype = 'longdash') +
+  geom_ribbon(data = thorn[thorn$Reservoir=='FCR', ], aes(ymin = soluble_p - sd_soluble_p, ymax = soluble_p + sd_soluble_p, fill = Reservoir), alpha = 0.2) +
+  geom_ribbon(data = thorn[thorn$Reservoir=='BVR', ], aes(ymin = soluble_p - sd_soluble_p, ymax = soluble_p + sd_soluble_p, fill = Reservoir), alpha = 0.2) +
+  xlab('Distance from stream (m)') +
+  ylab('Concentration') +
+  scale_color_manual(values = r_col) +
+  scale_fill_manual(values = r_col) +
+  theme_bw() +
+  labs(col = 'Reservoir') +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  ggtitle('Soluble Phosphorus')
+
+sn <- ggplot(thorn, aes(x = distance_from_stream, y = soluble_n, color = Reservoir)) +
+  #geom_point(size = 2) +
+  geom_line(aes(color = Reservoir), size = 2, linetype = 'longdash') +
+  geom_ribbon(data = thorn[thorn$Reservoir=='FCR', ], aes(ymin = soluble_n - sd_soluble_n, ymax = soluble_n + sd_soluble_n, fill = Reservoir), alpha = 0.2) +
+  geom_ribbon(data = thorn[thorn$Reservoir=='BVR', ], aes(ymin = soluble_n - sd_soluble_n, ymax = soluble_n + sd_soluble_n, fill = Reservoir), alpha = 0.2) +
+  xlab('Distance from stream (m)') +
+  ylab('Concentration') +
+  scale_color_manual(values = r_col) +
+  scale_fill_manual(values = r_col) +
+  theme_bw() +
+  labs(col = 'Reservoir') +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  ggtitle('Soluble Nitrogen')
+
+ggarrange(n, p, sn, sp, ncol = 2, nrow = 2, common.legend = TRUE)
+
+
+thorn_mean <- thorn %>% 
+  pivot_longer(total_n:sd_soluble_n, names_to = 'variable', values_to = 'value') 
+  
+
+ggplot(data = thorn_mean[thorn_mean$variable %in% means, ], aes(x = distance_from_stream, y = value, col = Reservoir)) +
+  geom_point(size = 2) +
+#  geom_ribbon(data = thorn_mean[thorn_mean$variable %in% sds, ], aes(ymin = value, ymax = -value, color = Reservoir)) +
   #geom_smooth(aes(col = Reservoir), se = FALSE) +
   geom_line(size = 2) +
   xlab('Distance from stream (m)') +
   ylab('Concentration') +
   facet_wrap(~variable, scales = "free_y") + 
-  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  scale_color_manual(values = r_col) +
   theme_bw() +
   labs(col = 'Reservoir') +
   theme(panel.grid.major = element_blank(), 
