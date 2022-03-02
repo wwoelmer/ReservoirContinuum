@@ -9,25 +9,26 @@ library(ggpubr)
 r_col <- c('olivedrab3', 'royalblue1')
 
 data <-read.csv('./Data/continuum_data.csv')
-data$Date <- as.Date(data$DateTime)
-
-
-data$distance_from_stream <- as.numeric(data$distance_from_stream)
-in_reservoir <- c( '20', '30', '45', '50') # site 01 is in res for BVR and in stream for FCR 
-in_stream <- c('99', '100', '101', '102', '200')
+data$Date <- as.Date(data$Date)
 
 long <- data %>%   
-  select(Site, Reservoir, Date, Flow_cms, distance_from_stream, TN_ugL:Chla_ugL, A:BIX, TN_TP:DN_TN, sp_cond, distance_m) %>% 
-  pivot_longer(TN_ugL:sp_cond, names_to = 'variable', values_to = 'value')
+  select(Site, Reservoir, Date, distance_from_stream, distance_m, Flow_cms, TN_ugL:T, Sp_cond_uScm) %>% 
+  pivot_longer(TN_ugL:Sp_cond_uScm, names_to = 'variable', values_to = 'value')
 
 # calculate 'processing'
 vars <- unique(long$variable)
-dates <- unique(long$Date)
+dates <- c("2019-04-29",
+           "2019-05-30",
+           "2019-06-27",
+           "2019-07-18",
+           "2019-08-22",
+           "2019-10-04")
+# all dates except Sept 20 2019 because we did not sample inflows this day
 res <- unique(long$Reservoir)
-dates <- dates[-6] # remove September date because we don't have inflow data
 
 
-### concentration delta 
+
+### simple concentration delta 
 test <- NA
 
 for(j in 1:length(vars)){
@@ -38,7 +39,7 @@ for(j in 1:length(vars)){
      temp3 <- temp2[temp2$Reservoir==res[m],]
      temp3 <- temp3 %>% distinct(temp3$Site, .keep_all = TRUE)
      
-     if(temp3$Reservoir=='BVR'){
+     if(temp3$Reservoir[1]=='BVR'){
        # calculate flow-weighting of inflows
        tot_flow <- temp3$Flow_cms[temp3$Site==100] + temp3$Flow_cms[temp3$Site==200] 
        prop_100 <- temp3$Flow_cms[temp3$Site==100]/tot_flow
@@ -103,7 +104,7 @@ test <- test[-1,]
 ### delta = what was produced between the two sites, so a positive value indicates that nutrients were produced, 
 ### negative means they were buried
 
-vars_keep <- c('A', 'T', 'Chla_ugL', 'DOC_mgL', 'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL', 'TN_ugL', 'TP_ugL', 'sp_cond')
+vars_keep <- c('A', 'T', 'Chla_ugL', 'DOC_mgL', 'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL', 'TN_ugL', 'TP_ugL', 'Sp_cond_uScm')
 test <- test[test$variable %in% vars_keep,]
 
 # add LOQ values for each analyte: https://docs.google.com/spreadsheets/d/12jLdBMZKTm7Om8Wyo4L_yNjLb_2fCIGw/edit#gid=1973039800
@@ -117,11 +118,11 @@ test$loq[test$variable=='DOC_mgL'] <- 0.411
 
 # because all values are less than 50, the accuracy is 1% of reading +/- 0.05 uS/cm
 # taken from manual for conductivity sensor
-sp <- test[test$distance_from_stream > 0 & test$variable=='sp_cond',]
+sp <- test[test$distance_from_stream > 0 & test$variable=='Sp_cond_uScm',]
 #hist(sp$value)
 
 for(i in 1:nrow(test)){
-  if(test$variable[i]=='sp_cond'){
+  if(test$variable[i]=='Sp_cond_uScm'){
     test$loq[i] <- 0.01*test$value[i] + 0.05
     test$delta_simple[i] <- NA
     
@@ -133,7 +134,7 @@ for(i in 1:nrow(test)){
 levels <- c('T', 'A', 'DOC_mgL',  
             'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
             'Chla_ugL','TN_ugL', 'TP_ugL',
-            'sp_cond')
+            'Sp_cond_uScm')
 #'TN_TP', 'DP_TP', 'DN_TN') #'HIX', 'BIX'
 labels <- c('T-autoch',  'A-alloch', 'DOC',
             'NH4', 'NO3', 'SRP',
@@ -182,67 +183,6 @@ f <- ggplot(data = test[test$distance_from_stream >0 & test$Reservoir=='FCR',],
 f
 
 ggarrange(b, f, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
-
-##### calculate normalized distance 
-test <- test %>% 
-  mutate(delta_norm = (delta/delta_distance)) %>%
-  mutate(norm_distance = ifelse(Reservoir=='BVR', distance_m/1117, distance_m/642))
-
-
-ggplot(data = test[test$distance_from_stream>0,], aes(x = distance_m, y = delta_norm)) +
-  facet_wrap(~variable, scales = 'free_y', ncol = 3) +
-  geom_line(aes(col = as.factor(month(Date)), linetype = Reservoir)) +
-  geom_hline(aes(yintercept = 0)) +
-  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
-  #geom_point(aes(x = 600, y = delta_simple, col = as.factor(month(Date))), size = 4) +
-  ylab('Delta concentration over delta distance') +
-  xlab('Distance from upstream (m)') +
-  theme_bw() +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())
-
-#ggplot(data = test[test$distance_from_stream>0,], aes(x = norm_distance, y = delta_norm)) +
-#  facet_wrap(~variable, scales = 'free') +
-#  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
-#  geom_line(aes(col = as.factor(month(Date)), linetype = Reservoir)) +
-#  geom_hline(aes(yintercept = 0)) +
-#  xlab('Normalized distance (% of total reservoir length)') +
-#  ylab('Delta concentration over delta distance') 
-
-bd <- ggplot(data = test[test$distance_from_stream>0 & test$Reservoir=='BVR',], aes(x = distance_m, y = delta_norm)) +
-  facet_wrap(~variable, scales = 'free_y', ncol = 3) +
-  geom_point(aes(col = as.factor(month(Date))), size = 2) +
-  geom_point(aes(x = 1200, y = delta_norm_simple, col = as.factor(month(Date))), size = 4)+
-  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
-  geom_line(aes(col = as.factor(month(Date)))) +
-  geom_hline(aes(yintercept = 0)) +
-  ylab('Delta concentration over delta distance') +
-  xlab('Distance from upstream (m)') +
-  theme_bw() +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        legend.position = 'none') +
-  ggtitle('Beaverdam Reservoir')
-
-
-
-fd <- ggplot(data = test[test$distance_from_stream>0 & test$Reservoir=='FCR',], aes(x = distance_m, y = delta_norm)) +
-  facet_wrap(~variable, scales = 'free_y', ncol = 3) +
-  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
-  geom_point(aes(col = as.factor(month(Date))), size = 2) +
-  geom_point(aes(x = 710, y = delta_norm_simple, col = as.factor(month(Date))), size = 4)+
-  geom_line(aes(col = as.factor(month(Date)))) +
-  geom_hline(aes(yintercept = 0)) +
-  ylab('Delta concentration over delta distance') +
-  xlab('Distance from upstream (m)') +
-  theme_bw() +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank()) +
-  ggtitle('Falling Creek Reservoir')
-
-ggarrange(bd, fd, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
-
-
 
 #########################################################################################################
 # now calculate q*concentration
@@ -333,11 +273,11 @@ test_load$loq[test_load$variable=='DOC_mgL'] <- 0.411
 
 # because all values are less than 50, the accuracy is 1% of reading +/- 0.05 uS/cm
 # taken from manual for conductivity sensor
-sp <- test_load[test_load$distance_from_stream > 0 & test_load$variable=='sp_cond',]
+sp <- test_load[test_load$distance_from_stream > 0 & test_load$variable=='Sp_cond_uScm',]
 hist(sp$value)
 
 for(i in 1:nrow(test_load)){
-  if(test_load$variable[i]=='sp_cond'){
+  if(test_load$variable[i]=='Sp_cond_uScm'){
     test_load$loq[i] <- 0.01*test_load$value[i] + 0.05
   }
 }
@@ -346,14 +286,14 @@ test_load$loq_load <- test_load$loq*test_load$Flow_cms
 vars_process <- c('T', 'A', 'DOC_mgL', 
                   'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
                   'Chla_ugL', 'TN_ugL', 'TP_ugL',
-                   'sp_cond')
+                   'Sp_cond_uScm')
 test_load <- test_load[test_load$variable %in% vars_process,]
 
 ## set the order of hte plots
 levels <- c('T', 'A', 'DOC_mgL', 
                   'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
                   'Chla_ugL', 'TN_ugL', 'TP_ugL',
-                  'sp_cond')
+                  'Sp_cond_uScm')
 labels <- c('T-autoch',  'A-alloch', 'DOC',
             'NH4', 'NO3', 'SRP',
             'Chl-a', 'TN', 'TP',
@@ -399,6 +339,7 @@ fl <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$Rese
   ylab('Delta load from upstream (concentration*discharge)') +
   xlab('Distance from upstream (m)') +
   ggtitle('Falling Creek Reservoir')
+fl
 
 ggarrange(bl, fl, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
 
@@ -455,12 +396,12 @@ ggarrange(bl, fl, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right')
 ########################## take mass/day and normalize by specific conductance
 
 # go through loop again and divided by sp cond 
-#/temp3$value[temp3$Site==20 & temp3$variable=='sp_cond']
+#/temp3$value[temp3$Site==20 & temp3$variable=='Sp_cond_uScm']
 
 test_load <- NA
 
 for(j in 1:length(vars)){
-  temp <- long_load_2[long_load_2$variable==vars[j]|long_load_2$variable=='sp_cond',]
+  temp <- long_load_2[long_load_2$variable==vars[j]|long_load_2$variable=='Sp_cond_uScm',]
   for (k in 1:length(dates)) {
     temp2 <- temp[temp$Date==dates[k],]
     for(m in 1:length(res)){
@@ -468,23 +409,23 @@ for(j in 1:length(vars)){
       if(temp3$Reservoir=='BVR'){
         temp3$delta_load_spatial[temp3$Site==100] <- 0
         temp3$delta_load_spatial[temp3$Site==200] <- 0
-        temp3$delta_load_spatial[temp3$Site==20] <- temp3$load[temp3$Site==20 & temp3$variable==vars[j]]/temp3$value[temp3$Site==20 & temp3$variable=='sp_cond'] - temp3$load[temp3$Site==100 & temp3$variable==vars[j]]/temp3$value[temp3$Site==100 & temp3$variable=='sp_cond']
-        temp3$delta_load_spatial[temp3$Site==30] <- temp3$load[temp3$Site==30 & temp3$variable==vars[j]]/temp3$value[temp3$Site==30 & temp3$variable=='sp_cond'] - temp3$load[temp3$Site==200 & temp3$variable==vars[j]]/temp3$value[temp3$Site==200 & temp3$variable=='sp_cond']
-        temp3$delta_load_spatial[temp3$Site==1] <- temp3$load[temp3$Site==1 & temp3$variable==vars[j]]/temp3$value[temp3$Site==1 & temp3$variable=='sp_cond'] - temp3$load[temp3$Site==20 & temp3$variable==vars[j]]/temp3$value[temp3$Site==20 & temp3$variable=='sp_cond']
-        temp3$delta_load_spatial[temp3$Site==45] <- temp3$load[temp3$Site==45 & temp3$variable==vars[j]]/temp3$value[temp3$Site==45 & temp3$variable=='sp_cond'] - mean(c(temp3$load[temp3$Site==1 & temp3$variable==vars[j]]/temp3$value[temp3$Site==1 & temp3$variable=='sp_cond'], temp3$load[temp3$Site==30 & temp3$variable==vars[j]]/temp3$value[temp3$Site==30 & temp3$variable=='sp_cond']), na.rm = TRUE)
+        temp3$delta_load_spatial[temp3$Site==20] <- temp3$load[temp3$Site==20 & temp3$variable==vars[j]]/temp3$value[temp3$Site==20 & temp3$variable=='Sp_cond_uScm'] - temp3$load[temp3$Site==100 & temp3$variable==vars[j]]/temp3$value[temp3$Site==100 & temp3$variable=='Sp_cond_uScm']
+        temp3$delta_load_spatial[temp3$Site==30] <- temp3$load[temp3$Site==30 & temp3$variable==vars[j]]/temp3$value[temp3$Site==30 & temp3$variable=='Sp_cond_uScm'] - temp3$load[temp3$Site==200 & temp3$variable==vars[j]]/temp3$value[temp3$Site==200 & temp3$variable=='Sp_cond_uScm']
+        temp3$delta_load_spatial[temp3$Site==1] <- temp3$load[temp3$Site==1 & temp3$variable==vars[j]]/temp3$value[temp3$Site==1 & temp3$variable=='Sp_cond_uScm'] - temp3$load[temp3$Site==20 & temp3$variable==vars[j]]/temp3$value[temp3$Site==20 & temp3$variable=='Sp_cond_uScm']
+        temp3$delta_load_spatial[temp3$Site==45] <- temp3$load[temp3$Site==45 & temp3$variable==vars[j]]/temp3$value[temp3$Site==45 & temp3$variable=='Sp_cond_uScm'] - mean(c(temp3$load[temp3$Site==1 & temp3$variable==vars[j]]/temp3$value[temp3$Site==1 & temp3$variable=='Sp_cond_uScm'], temp3$load[temp3$Site==30 & temp3$variable==vars[j]]/temp3$value[temp3$Site==30 & temp3$variable=='Sp_cond_uScm']), na.rm = TRUE)
         #temp3$delta_load_spatial[temp3$Site==45] <- temp3$load[temp3$Site==45] - (temp3$load[temp3$Site==1] - temp3$load[temp3$Site==30])
-        temp3$delta_load_spatial[temp3$Site==50] <- temp3$load[temp3$Site==50 & temp3$variable==vars[j]]/temp3$value[temp3$Site==50 & temp3$variable=='sp_cond'] - temp3$load[temp3$Site==45 & temp3$variable==vars[j]]/temp3$value[temp3$Site==45 & temp3$variable=='sp_cond']
-        temp3$delta_load_simple <- temp3$load[temp3$Site==50 & temp3$variable==vars[j]]/temp3$value[temp3$Site==50 & temp3$variable=='sp_cond'] - sum(temp3$load[temp3$Site==100& temp3$variable==vars[j]]/temp3$value[temp3$Site==100 & temp3$variable=='sp_cond'], temp3$load[temp3$Site==200 & temp3$variable==vars[j]]/temp3$value[temp3$Site==200 & temp3$variable=='sp_cond'], na.rm = TRUE)
+        temp3$delta_load_spatial[temp3$Site==50] <- temp3$load[temp3$Site==50 & temp3$variable==vars[j]]/temp3$value[temp3$Site==50 & temp3$variable=='Sp_cond_uScm'] - temp3$load[temp3$Site==45 & temp3$variable==vars[j]]/temp3$value[temp3$Site==45 & temp3$variable=='Sp_cond_uScm']
+        temp3$delta_load_simple <- temp3$load[temp3$Site==50 & temp3$variable==vars[j]]/temp3$value[temp3$Site==50 & temp3$variable=='Sp_cond_uScm'] - sum(temp3$load[temp3$Site==100& temp3$variable==vars[j]]/temp3$value[temp3$Site==100 & temp3$variable=='Sp_cond_uScm'], temp3$load[temp3$Site==200 & temp3$variable==vars[j]]/temp3$value[temp3$Site==200 & temp3$variable=='Sp_cond_uScm'], na.rm = TRUE)
         
       }
       if(temp3$Reservoir=='FCR'){
         temp3$delta_load_spatial[temp3$Site==99] <- 0
         temp3$delta_load_spatial[temp3$Site==200] <- 0
-        temp3$delta_load_spatial[temp3$Site==20] <- temp3$load[temp3$Site==20 & temp3$variable==vars[j]]/temp3$value[temp3$Site==20 & temp3$variable=='sp_cond'] - sum(temp3$load[temp3$Site==99 & temp3$variable==vars[j]]/temp3$value[temp3$Site==99 & temp3$variable=='sp_cond'], temp3$load[temp3$Site==200 & temp3$variable==vars[j]]/temp3$value[temp3$Site==200 & temp3$variable=='sp_cond'], na.rm = TRUE)
-        temp3$delta_load_spatial[temp3$Site==30] <- temp3$load[temp3$Site==30 & temp3$variable==vars[j]]/temp3$value[temp3$Site==30 & temp3$variable=='sp_cond'] - temp3$load[temp3$Site==20 & temp3$variable==vars[j]]/temp3$value[temp3$Site==20 & temp3$variable=='sp_cond']
-        temp3$delta_load_spatial[temp3$Site==45] <- temp3$load[temp3$Site==45 & temp3$variable==vars[j]]/temp3$value[temp3$Site==45 & temp3$variable=='sp_cond'] - temp3$load[temp3$Site==30 & temp3$variable==vars[j]]/temp3$value[temp3$Site==30 & temp3$variable=='sp_cond']
-        temp3$delta_load_spatial[temp3$Site==50] <- temp3$load[temp3$Site==50 & temp3$variable==vars[j]]/temp3$value[temp3$Site==50 & temp3$variable=='sp_cond'] - temp3$load[temp3$Site==45 & temp3$variable==vars[j]]/temp3$value[temp3$Site==45 & temp3$variable=='sp_cond']
-        temp3$delta_load_simple <- temp3$load[temp3$Site==50 & temp3$variable==vars[j]]/temp3$value[temp3$Site==50 & temp3$variable=='sp_cond'] - sum(temp3$load[temp3$Site==99 & temp3$variable==vars[j]]/temp3$value[temp3$Site==99 & temp3$variable=='sp_cond'], temp3$load[temp3$Site==200 & temp3$variable==vars[j]]/temp3$value[temp3$Site==200 & temp3$variable=='sp_cond'], na.rm = TRUE)
+        temp3$delta_load_spatial[temp3$Site==20] <- temp3$load[temp3$Site==20 & temp3$variable==vars[j]]/temp3$value[temp3$Site==20 & temp3$variable=='Sp_cond_uScm'] - sum(temp3$load[temp3$Site==99 & temp3$variable==vars[j]]/temp3$value[temp3$Site==99 & temp3$variable=='Sp_cond_uScm'], temp3$load[temp3$Site==200 & temp3$variable==vars[j]]/temp3$value[temp3$Site==200 & temp3$variable=='Sp_cond_uScm'], na.rm = TRUE)
+        temp3$delta_load_spatial[temp3$Site==30] <- temp3$load[temp3$Site==30 & temp3$variable==vars[j]]/temp3$value[temp3$Site==30 & temp3$variable=='Sp_cond_uScm'] - temp3$load[temp3$Site==20 & temp3$variable==vars[j]]/temp3$value[temp3$Site==20 & temp3$variable=='Sp_cond_uScm']
+        temp3$delta_load_spatial[temp3$Site==45] <- temp3$load[temp3$Site==45 & temp3$variable==vars[j]]/temp3$value[temp3$Site==45 & temp3$variable=='Sp_cond_uScm'] - temp3$load[temp3$Site==30 & temp3$variable==vars[j]]/temp3$value[temp3$Site==30 & temp3$variable=='Sp_cond_uScm']
+        temp3$delta_load_spatial[temp3$Site==50] <- temp3$load[temp3$Site==50 & temp3$variable==vars[j]]/temp3$value[temp3$Site==50 & temp3$variable=='Sp_cond_uScm'] - temp3$load[temp3$Site==45 & temp3$variable==vars[j]]/temp3$value[temp3$Site==45 & temp3$variable=='Sp_cond_uScm']
+        temp3$delta_load_simple <- temp3$load[temp3$Site==50 & temp3$variable==vars[j]]/temp3$value[temp3$Site==50 & temp3$variable=='Sp_cond_uScm'] - sum(temp3$load[temp3$Site==99 & temp3$variable==vars[j]]/temp3$value[temp3$Site==99 & temp3$variable=='Sp_cond_uScm'], temp3$load[temp3$Site==200 & temp3$variable==vars[j]]/temp3$value[temp3$Site==200 & temp3$variable=='Sp_cond_uScm'], na.rm = TRUE)
         
         
       }  
@@ -500,29 +441,29 @@ test_load <- test_load[!(test_load$site_res %in% exclude),]
 vars_process <- c('T', 'A', 'DOC_mgL', 
                   'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
                   'Chla_ugL', 'TN_ugL', 'TP_ugL',
-                  'sp_cond')
+                  'Sp_cond_uScm')
 test_load <- test_load[test_load$variable %in% vars_process,]
 
 ## set the order of hte plots
-levels <- c('T', 'A', 'DOC_mgL', 
-            'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
-            'Chla_ugL', 'TN_ugL', 'TP_ugL',
-            'sp_cond')
-labels <- c('T-autoch',  'A-alloch', 'DOC',
-            'NH4', 'NO3', 'SRP',
-            'Chl-a', 'TN', 'TP',
+levels <- c('NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
+            'DOC_mgL', 'TN_ugL', 'TP_ugL',
+            'Chla_ugL','T', 'A',  
+            'Sp_cond_uScm')
+labels <- c('a) NH4 (μg/L)', 'b) NO3 (μg/L)', 'c) SRP (μg/L)',
+            'd) DOC (mg/L)', 'e) TN (μg/L)', 'f) TP (μg/L)',
+            'g) Chl-a (μg/L)', 'h) T-autoch (RFU)',  'i) A-alloch (RFU)',
             "Sp Cond")
 names(labels) <- levels
 test_load$variable <- factor(test_load$variable, levels = levels)
 
 #test_load <- test_load %>% 
 #  group_by(Date, Reservoir, Site) %>% 
-#  mutate(delta_load_spatial_ratio = delta_load_spatial/value[variable=='sp_cond']) %>% 
-#  mutate(delta_load_simple_ratio = delta_load_simple/value[variable=='sp_cond'])
+#  mutate(delta_load_spatial_ratio = delta_load_spatial/value[variable=='Sp_cond_uScm']) %>% 
+#  mutate(delta_load_simple_ratio = delta_load_simple/value[variable=='Sp_cond_uScm'])
 
-b_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$variable!='sp_cond'  & test_load$Reservoir=='BVR',], 
+b_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$variable!='Sp_cond_uScm'  & test_load$Reservoir=='BVR',], 
              aes(x = distance_m, y = delta_load_spatial)) +
-  facet_wrap(~variable, scales = 'free_y', ncol = 3) +
+  facet_wrap(~variable, scales = 'free_y', ncol = 3,  labeller = labeller(variable = labels)) +
   geom_line(aes(col = as.factor(month(Date)))) +
   geom_hline(aes(yintercept = 0)) +
   geom_point(aes(col = as.factor(month(Date))), size = 2) +
@@ -538,10 +479,11 @@ b_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$va
   ylab('Delta mass/sp cond (µg m3 cm / L s µs)') +
   xlab('Distance from upstream (m)') +
   ggtitle('Beaverdam Reservoir')
+b_sp
 
-f_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$variable!='sp_cond' & test_load$Reservoir=='FCR',], 
+f_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$variable!='Sp_cond_uScm' & test_load$Reservoir=='FCR',], 
              aes(x = distance_m, y = delta_load_spatial)) +
-  facet_wrap(~variable, scales = 'free_y', ncol = 3) +
+  facet_wrap(~variable, scales = 'free_y', ncol = 3,  labeller = labeller(variable = labels_f)) +
   geom_line(aes(col = as.factor(month(Date)))) +
   geom_hline(aes(yintercept = 0)) +
   geom_point(aes(col = as.factor(month(Date))), size = 2) +
@@ -556,10 +498,74 @@ f_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$va
   ylab('Delta mass/sp cond (µg m3 cm / L s µs)') +
   xlab('Distance from upstream (m)') +
   ggtitle('Falling Creek Reservoir')
+f_sp
 
 ggarrange(b_sp, f_sp, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
 
-#ggplot(data = test_load[test_load$variable=='sp_cond' & test_load$Reservoir=='FCR',], aes(x = Date, y = value)) + geom_point(aes(color = as.factor(Site)))
+#ggplot(data = test_load[test_load$variable=='Sp_cond_uScm' & test_load$Reservoir=='FCR',], aes(x = Date, y = value)) + geom_point(aes(color = as.factor(Site)))
+
+
+##### calculate normalized distance 
+test <- test %>% 
+  mutate(delta_norm = (delta/delta_distance)) %>%
+  mutate(norm_distance = ifelse(Reservoir=='BVR', distance_m/1117, distance_m/642))
+
+
+ggplot(data = test[test$distance_from_stream>0,], aes(x = distance_m, y = delta_norm)) +
+  facet_wrap(~variable, scales = 'free_y', ncol = 3) +
+  geom_line(aes(col = as.factor(month(Date)), linetype = Reservoir)) +
+  geom_hline(aes(yintercept = 0)) +
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  #geom_point(aes(x = 600, y = delta_simple, col = as.factor(month(Date))), size = 4) +
+  ylab('Delta concentration over delta distance') +
+  xlab('Distance from upstream (m)') +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+#ggplot(data = test[test$distance_from_stream>0,], aes(x = norm_distance, y = delta_norm)) +
+#  facet_wrap(~variable, scales = 'free') +
+#  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+#  geom_line(aes(col = as.factor(month(Date)), linetype = Reservoir)) +
+#  geom_hline(aes(yintercept = 0)) +
+#  xlab('Normalized distance (% of total reservoir length)') +
+#  ylab('Delta concentration over delta distance') 
+
+bd <- ggplot(data = test[test$distance_from_stream>0 & test$Reservoir=='BVR',], aes(x = distance_m, y = delta_norm)) +
+  facet_wrap(~variable, scales = 'free_y', ncol = 3) +
+  geom_point(aes(col = as.factor(month(Date))), size = 2) +
+  geom_point(aes(x = 1200, y = delta_norm_simple, col = as.factor(month(Date))), size = 4)+
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  geom_line(aes(col = as.factor(month(Date)))) +
+  geom_hline(aes(yintercept = 0)) +
+  ylab('Delta concentration over delta distance') +
+  xlab('Distance from upstream (m)') +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = 'none') +
+  ggtitle('Beaverdam Reservoir')
+
+
+
+fd <- ggplot(data = test[test$distance_from_stream>0 & test$Reservoir=='FCR',], aes(x = distance_m, y = delta_norm)) +
+  facet_wrap(~variable, scales = 'free_y', ncol = 3) +
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  geom_point(aes(col = as.factor(month(Date))), size = 2) +
+  geom_point(aes(x = 710, y = delta_norm_simple, col = as.factor(month(Date))), size = 4)+
+  geom_line(aes(col = as.factor(month(Date)))) +
+  geom_hline(aes(yintercept = 0)) +
+  ylab('Delta concentration over delta distance') +
+  xlab('Distance from upstream (m)') +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  ggtitle('Falling Creek Reservoir')
+
+ggarrange(bd, fd, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
+
+
+
 
 
 #################################################################################################################
