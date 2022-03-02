@@ -59,6 +59,11 @@ inf$Date <- as.Date(inf$Date)
 inf$Site <- as.factor(inf$Site)
 inf <- inf %>% select(Reservoir:Flow_cms)
 
+# reading from 05-30-2019 at F200 was done with salt slug but had very poor curve for integration, see here: https://docs.google.com/spreadsheets/d/1HB9Kq_si33m8z__UB4dcPcqlo6Zh439A/edit#gid=510435495
+# which may have skewed the estimate, 
+# we will use the observation from three days earlier on 05-27-2019 instead
+
+inf$Date[inf$Reservoir=='FCR' & inf$Site=='200' & inf$Date=='2019-05-27'] <- '2019-05-30'
 ###################
 # read in eems
 
@@ -91,11 +96,6 @@ dist$Site <- as.factor(dist$Site)
 
 spcond <- read.csv('./Data/raw_data/spcond_edi.csv')
 spcond$Date <- as.Date(spcond$DateTime)
-spcond <- spcond %>% 
-  filter(Reservoir=='BVR') %>%
-  filter(Depth_m==0.1) %>% 
-  select(Reservoir, Site, Date, Depth_m, Sp_cond_uScm) %>% 
-  filter(Date > as.Date('2019-04-01'))
 
 spcond <- spcond %>%
   filter(Reservoir=='FCR' | Reservoir=='BVR') %>% 
@@ -107,6 +107,25 @@ spcond <- spcond %>%
 spcond <- na.omit(spcond)
 spcond$Site <- as.factor(spcond$Site)
 
+# a couple of days we do not have sp cond data at F50, so use CTD data instead
+ctd <- read.csv('./Data/raw_data/ctd_edi.csv')
+ctd$Date <- as.Date(ctd$Date)
+ctd$Site <- as.factor(ctd$Site)
+dates_ctd <- c(as.Date('2019-06-27'), as.Date('2019-07-18'), as.Date('2019-10-04'))
+
+ctd_sp <- ctd %>% 
+  filter(Reservoir=='FCR' | Reservoir=='BVR' & Site == '50') %>%
+  mutate(Depth_m = ifelse(Depth_m >= 0.1 & Depth_m <= 0.5, 0.1, Depth_m)) %>% 
+  filter(Depth_m==0.1) %>% 
+  filter(Date %in% dates_ctd) %>% 
+  select(Date, Reservoir, Site, Spec_Cond_uScm) 
+
+ctd_sp2 <- aggregate(Spec_Cond_uScm ~ Date + Reservoir, data = ctd_sp, mean)
+ctd_sp2$Site <- '50'
+colnames(ctd_sp2)[3] <- 'Sp_cond_uScm'
+spcond_all <- rbind(spcond, ctd_sp2)
+
+
 ###################
 # combine datasets
 
@@ -114,7 +133,7 @@ all <- left_join(chem, chl)
 all <- left_join(all, inf)
 all <- left_join(all, eems)
 all <- left_join(all, dist)
-all <- left_join(all, spcond)
+all <- left_join(all, spcond_all)
 
 
 all$distance_from_stream <- 'NA'
@@ -136,5 +155,7 @@ for (i in 1:nrow(all)) {
   }
 }
 
+# look for duplicates across date/reservoir/site
+all <- all[!duplicated(all[c('Reservoir', 'Date', 'Site')]),]
 
 write.csv(all, './Data/continuum_data.csv', row.names = FALSE)
