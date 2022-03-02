@@ -11,29 +11,10 @@ r_col <- c('olivedrab3', 'royalblue1')
 
 
 #data <- read.csv('./Data/continuum_pf.csv')
-data <-read.csv('./Data/continuum_ww.csv')
-data$Date <- as.Date(data$DateTime)
+data <-read.csv('./Data/continuum_data.csv')
+data$Date <- as.Date(data$Date)
 
-data <- data %>% select(Date, Reservoir, Site, Flow_cms, Method)
 
-### read in distance data from arcgis
-dist <- read.csv('./Data/rc_coordinates_100only.csv')
-dist <- dist %>% select(Reservoir, Site, distance_m)
-
-data <- left_join(data, dist)
-
-# read in specific conductivity data
-cond <- read.csv('./Data/rc_temp_conductivity.csv')
-cond <- cond %>% 
-  select(Reservoir, DateTime, Site, Sp.Cond...Micro.S., Notes) %>% 
-  rename(sp_cond = Sp.Cond...Micro.S.)
-cond$Date <- as.Date(cond$DateTime)
-cond$Site <- as.numeric(gsub("[A-z]", "", cond$Site)) # Remove letters
-cond$Letter <- gsub("[0-9]", "", cond$Site) # Remove numbers
-cond <- cond %>% 
-  select(Site, Reservoir, Date, sp_cond)
-
-data <- left_join(data, cond)
 
 # keep only inflow sites used in analysis
 data$res_site <- paste0(data$Reservoir, "_", data$Site)
@@ -42,10 +23,11 @@ bvr_res <- c('BVR_20', 'BVR_30', 'BVR_1', 'BVR_45', 'BVR_50')
 
 
 flow <- data[data$res_site %in% load_sites,]
+flow <- flow %>% dplyr::select(Date, res_site, Reservoir, Site, Flow_cms)
 data <- data[!(data$res_site %in% c('FCR_100', 'FCR_102', 'FCR_101', 'FCR_1')),]
 
 # remove september date because we don't have inflow data
-flow <- flow[flow$Date!='2019-09-20',]
+flow <- flow[flow$Date!='2019-09-20' & flow$Date!='2019-07-22',]
 
 # assign flows for F50 based on F01 
 flow$Flow_cms[flow$res_site=='FCR_50'] <- flow$Flow_cms[flow$res_site=='FCR_1']
@@ -74,16 +56,19 @@ for(i in 1:nrow(data)){
     data$location[i] <- 'Stream'
   }
 }
+data$Site <- as.factor(data$Site)
+data$location <- as.factor(data$location)
 
 inf <- ggplot(data = flow, aes(x = Date, y = Flow_cms)) +
   geom_point(aes(col = res_site), size = 4) +
   geom_line(aes(col = res_site)) +
   theme_bw() +
+  ylab('Discharge (m3/s)') +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
   labs(color = 'Site', size = NULL)
 inf
-spc <-  ggplot(data = data, aes(x = Date, y = sp_cond)) +
+spc <-  ggplot(data = data, aes(x = Date, y = Sp_cond_uScm)) +
   geom_point(aes(col = as.factor(Site), shape = as.factor(location)), size = 4) +
   geom_line(aes(col = as.factor(Site))) +
   facet_wrap(~Reservoir) +
@@ -92,12 +77,12 @@ spc <-  ggplot(data = data, aes(x = Date, y = sp_cond)) +
         panel.grid.minor = element_blank()) +
   ylab('Specific Conductivity (us/cm)') +
   labs(color = 'Site', shape = 'Location')
-  #geom_text(data = data[data$location=='Stream',], aes(x = Date, y = sp_cond, label = Site),
+  #geom_text(data = data[data$location=='Stream',], aes(x = Date, y = Sp_cond_uScm_uScm, label = Site),
   #          nudge_y = 1)
 spc
 ggarrange(inf, spc, nrow = 1, ncol = 2, legend = 'right') 
 
-spc <-  ggplot(data = data, aes(x = distance_m, y = sp_cond)) +
+spc <-  ggplot(data = data, aes(x = distance_m, y = Sp_cond_uScm)) +
   geom_point(aes(col = as.factor(Date), size = 2)) +
   geom_line(aes(col = as.factor(Date))) +
   facet_wrap(~Reservoir, scales = 'free_x') +
