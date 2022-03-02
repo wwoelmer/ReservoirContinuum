@@ -16,10 +16,14 @@ chem_all <- "https://pasta.lternet.edu/package/data/eml/edi/199/8/da174082a3d924
 try(download.file(chem_all, destfile = paste0("./Data/raw_data/chem_all_edi.csv"), 
                   method = "curl"))
 
-spcond_all <- "https://pasta.lternet.edu/package/data/eml/edi/198/9/b3bd353312f9e37ca392e2a5315cc9da"
+spcond_all <-  "https://pasta.lternet.edu/package/data/eml/edi/198/10/b3bd353312f9e37ca392e2a5315cc9da" 
 try(download.file(spcond_all, destfile = paste0("./Data/raw_data/spcond_edi.csv"), 
                   method = "curl"))
 
 met <-  "https://pasta.lternet.edu/package/data/eml/edi/389/6/a5524c686e2154ec0fd0459d46a7d1eb" 
 try(download.file(met, destfile = paste0("./Data/raw_data/met_edi.csv"), 
+                  method = "curl"))
+
+ctd <- "https://pasta.lternet.edu/package/data/eml/edi/200/12/0a62d1946e8d9a511bc1404e69e59b8c" 
+try(download.file(ctd, destfile = paste0("./Data/raw_data/ctd_edi.csv"), 
                   method = "curl"))
