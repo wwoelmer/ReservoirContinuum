@@ -449,21 +449,40 @@ levels <- c('NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
             'DOC_mgL', 'TN_ugL', 'TP_ugL',
             'Chla_ugL','T', 'A',  
             'Sp_cond_uScm')
-labels <- c('a) NH4 (μg/L)', 'b) NO3 (μg/L)', 'c) SRP (μg/L)',
-            'd) DOC (mg/L)', 'e) TN (μg/L)', 'f) TP (μg/L)',
-            'g) Chl-a (μg/L)', 'h) T-autoch (RFU)',  'i) A-alloch (RFU)',
-            "Sp Cond")
-names(labels) <- levels
+labels_f <- c('d) NH4 (μg/L)', 'e) NO3 (μg/L)', 'f) SRP (μg/L)',
+              'j) DOC (mg/L)', 'k) TN (μg/L)', 'l) TP (μg/L)',
+              'p) Chl-a (μg/L)', 'q) T-autoch (RFU)',  'r) A-alloch (RFU)', 'Sp Cond') 
+names(labels_f) <- levels
 test_load$variable <- factor(test_load$variable, levels = levels)
 
-#test_load <- test_load %>% 
-#  group_by(Date, Reservoir, Site) %>% 
-#  mutate(delta_load_spatial_ratio = delta_load_spatial/value[variable=='Sp_cond_uScm']) %>% 
-#  mutate(delta_load_simple_ratio = delta_load_simple/value[variable=='Sp_cond_uScm'])
+f_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$variable!='Sp_cond_uScm' & test_load$Reservoir=='FCR',], 
+               aes(x = distance_m, y = delta_load_spatial)) +
+  facet_wrap(~variable, scales = 'free_y', ncol = 3,  labeller = labeller(variable = labels_f)) +
+  geom_line(aes(col = as.factor(month(Date)))) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_point(aes(col = as.factor(month(Date))), size = 2) +
+  geom_point(aes(x = 710, y = delta_load_simple, col = as.factor(month(Date))), size = 4)+
+  #  geom_ribbon(aes(ymin = delta_load_spatial -loq_load, ymax = delta_load_spatial + loq_load, 
+  #                  col = as.factor(month(Date)), fill = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') +
+  scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  ylab('Delta mass/sp cond (µg m3 cm / L s µs)') +
+  xlab('Distance from upstream (m)') +
+  ggtitle('Falling Creek Reservoir')
+f_sp
+
+labels_b <- c('a) NH4 (μg/L)', 'b) NO3 (μg/L)', 'c) SRP (μg/L)',
+              'g) DOC (mg/L)', 'h) TN (μg/L)', 'i) TP (μg/L)',
+              'm) Chl-a (μg/L)', 'n) T-autoch (RFU)',  'o) A-alloch (RFU)', 'sp cond') 
+names(labels_b) <- levels
+test_load$variable <- factor(test_load$variable, levels = levels)
 
 b_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$variable!='Sp_cond_uScm'  & test_load$Reservoir=='BVR',], 
              aes(x = distance_m, y = delta_load_spatial)) +
-  facet_wrap(~variable, scales = 'free_y', ncol = 3,  labeller = labeller(variable = labels)) +
+  facet_wrap(~variable, scales = 'free_y', ncol = 3,  labeller = labeller(variable = labels_b)) +
   geom_line(aes(col = as.factor(month(Date)))) +
   geom_hline(aes(yintercept = 0)) +
   geom_point(aes(col = as.factor(month(Date))), size = 2) +
@@ -481,24 +500,6 @@ b_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$va
   ggtitle('Beaverdam Reservoir')
 b_sp
 
-f_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$variable!='Sp_cond_uScm' & test_load$Reservoir=='FCR',], 
-             aes(x = distance_m, y = delta_load_spatial)) +
-  facet_wrap(~variable, scales = 'free_y', ncol = 3,  labeller = labeller(variable = labels_f)) +
-  geom_line(aes(col = as.factor(month(Date)))) +
-  geom_hline(aes(yintercept = 0)) +
-  geom_point(aes(col = as.factor(month(Date))), size = 2) +
-  geom_point(aes(x = 710, y = delta_load_simple, col = as.factor(month(Date))), size = 4)+
-  #  geom_ribbon(aes(ymin = delta_load_spatial -loq_load, ymax = delta_load_spatial + loq_load, 
-  #                  col = as.factor(month(Date)), fill = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
-  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') +
-  scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
-  theme_bw() +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank()) +
-  ylab('Delta mass/sp cond (µg m3 cm / L s µs)') +
-  xlab('Distance from upstream (m)') +
-  ggtitle('Falling Creek Reservoir')
-f_sp
 
 ggarrange(b_sp, f_sp, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
 
