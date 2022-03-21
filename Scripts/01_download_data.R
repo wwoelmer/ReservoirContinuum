@@ -27,3 +27,7 @@ try(download.file(met, destfile = paste0("./Data/raw_data/met_edi.csv"),
 ctd <- "https://pasta.lternet.edu/package/data/eml/edi/200/12/0a62d1946e8d9a511bc1404e69e59b8c" 
 try(download.file(ctd, destfile = paste0("./Data/raw_data/ctd_edi.csv"), 
                   method = "curl"))
+
+cat <- "https://pasta.lternet.edu/package/data/eml/edi/271/6/23a191c1870a5b18cbc17f2779f719cf" 
+try(download.file(cat, destfile = paste0("./Data/raw_data/catwalk_edi.csv"), 
+                  method = "curl"))
