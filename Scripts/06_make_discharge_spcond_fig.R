@@ -1,10 +1,12 @@
 # plot discharge and specific conductivity time series
+#install.packages('ggrepel')
 
 library(tidyverse)
 library(patchwork)
 library(lubridate)
 library(EnvStats)
 library(ggpubr)
+library(ggrepel)
 #library(ggpmisc)
 
 r_col <- c('olivedrab3', 'royalblue1')
@@ -23,7 +25,7 @@ bvr_res <- c('BVR_20', 'BVR_30', 'BVR_1', 'BVR_45', 'BVR_50')
 
 
 flow <- data[data$res_site %in% load_sites,]
-flow <- flow %>% dplyr::select(Date, res_site, Reservoir, Site, Flow_cms)
+flow <- flow %>% dplyr::select(Date, res_site, Reservoir, Site, Flow_cms, distance_from_stream)
 data <- data[!(data$res_site %in% c('FCR_100', 'FCR_102', 'FCR_101', 'FCR_1')),]
 
 # remove september date because we don't have inflow data
@@ -58,16 +60,23 @@ for(i in 1:nrow(data)){
 }
 data$Site <- as.factor(data$Site)
 data$location <- as.factor(data$location)
+flow <- flow %>% 
+  mutate(name = ifelse(res_site=="FCR_99", '100', Site)) %>% 
+  mutate(labels = as.factor(Site))
 
 inf <- ggplot(data = flow, aes(x = Date, y = Flow_cms)) +
-  geom_point(aes(col = res_site), size = 4) +
-  geom_line(aes(col = res_site)) +
+  geom_point(aes(col = Reservoir, shape = labels), size = 4) +
+  geom_line(data = flow[flow$Reservoir=='FCR',], aes(shape = labels, col = Reservoir)) +
+  geom_line(data = flow[flow$Reservoir=='BVR',], aes(shape = labels, col = Reservoir)) +
   theme_bw() +
+  scale_color_manual(values = r_col) +
+  #scale_shape_manual(values = c(21,19)) +
   ylab('Discharge (m3/s)') +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
   labs(color = 'Site', size = NULL)
 inf
+
 spc <-  ggplot(data = data, aes(x = Date, y = Sp_cond_uScm)) +
   geom_point(aes(col = as.factor(Site), shape = as.factor(location)), size = 4) +
   geom_line(aes(col = as.factor(Site))) +
@@ -82,13 +91,24 @@ spc <-  ggplot(data = data, aes(x = Date, y = Sp_cond_uScm)) +
 spc
 ggarrange(inf, spc, nrow = 1, ncol = 2, legend = 'right') 
 
+data <- data %>% 
+  mutate(labels = Site)
+
 spc <-  ggplot(data = data, aes(x = distance_m, y = Sp_cond_uScm)) +
-  geom_point(aes(col = as.factor(Date), size = 2)) +
-  geom_line(aes(col = as.factor(Date))) +
+  geom_point(data = data[data$distance_from_stream > 0,], aes(col = as.factor(month(Date)), size = 2)) +
+  geom_point(data = data[data$distance_from_stream < 1,], aes(col = as.factor(month(Date)), size = 2, shape = res_site)) +
+  geom_line(data = data[data$Site!='200',], aes(col = as.factor(month(Date)))) +
+  geom_line(data = data[data$Site!='100' & data$Site!='99',], aes(col = as.factor(month(Date)))) +
   facet_wrap(~Reservoir, scales = 'free_x') +
+  #geom_label(aes(label = labels), na.rm = TRUE) +
+  scale_size(guide = 'none') +
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
-  ylab('Specific Conductivity (us/cm)')
+  ylab('Specific Conductivity (us/cm)') +
+  labs(color = 'Month', shape = 'Location', size = "")+
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') 
+  
 spc
+
 ggarrange(inf, spc, nrow = 1, ncol = 2, legend = 'right') 
