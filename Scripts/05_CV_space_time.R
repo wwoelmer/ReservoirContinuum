@@ -36,6 +36,7 @@ CV_time <- data[data$distance_from_stream>0,] %>% group_by(Reservoir, Site) %>%
   mutate(CV_T = cv(T, na.rm = TRUE)) %>% 
   mutate(CV_DOC = cv(DOC_mgL, na.rm = TRUE)) %>% 
   mutate(CV_DPTP = cv(DP_TP, na.rm = TRUE)) %>% 
+  mutate(CV_DNDP = cv(DN_DP, na.rm = TRUE)) %>% 
   mutate(CV_DNTN = cv(DN_TN, na.rm = TRUE)) %>% 
   select(Date, Reservoir, distance_from_stream, distance_m, CV_chl:CV_DNTN) %>% 
   distinct(Site, Reservoir, .keep_all = TRUE)
@@ -49,12 +50,12 @@ levels <- c('CV_T', 'CV_A',
             'CV_DOC',
             'CV_NH4', 'CV_NO3', 'CV_SRP',
             'CV_TN', 'CV_TP', 'CV_chl',
-            'CV_TNTP', 'CV_DPTP', 'CV_DNTN')
+            'CV_TNTP', 'CV_DPTP', 'CV_DNTN', 'CV_DNDP')
 labels <- c('T-alloch', 'A-autoch', 'HIX-alloch', 'BIX-autoch',
             'DOC',
             'NH4', 'NO3', 'SRP',
             'TN', 'TP', 'Chl-a',
-            'TNTP', 'DPTP', 'DNTN')
+            'TNTP', 'DPTP', 'DNTN', 'DNDP')
 names(labels) <- levels
 time_long$variable <- factor(time_long$variable, levels = levels)
 
@@ -70,6 +71,7 @@ CV_site <- data[data$distance_from_stream>0,] %>% group_by(Reservoir, Date) %>%
   mutate(CV_A = cv(A, na.rm = TRUE)) %>% 
   mutate(CV_T = cv(T, na.rm = TRUE)) %>% 
   mutate(CV_DOC = cv(DOC_mgL, na.rm = TRUE)) %>% 
+  mutate(CV_DNDP = cv(DN_DP, na.rm = TRUE)) %>% 
   mutate(CV_DPTP = cv(DP_TP, na.rm = TRUE)) %>% 
   mutate(CV_DNTN = cv(DN_TN, na.rm = TRUE)) %>% 
   select(Date, Reservoir, distance_from_stream, distance_m, CV_chl:CV_DNTN) %>% 
@@ -112,7 +114,7 @@ vars_keep <- c( 'CV_chl',  'CV_SRP',  'CV_NO3',
                 'CV_NH4',  'CV_TP',   'CV_TN',    
                 'CV_A',    'CV_T',    'CV_DOC')
 
-long_both <- long_both[long_both$variable %in% vars_keep,]
+long_vars <- long_both[long_both$variable %in% vars_keep,]
 
 levels <- c('CV_NH4', 'CV_NO3', 'CV_SRP',    
             'CV_DOC', 'CV_TP',  'CV_TN',    
@@ -123,11 +125,11 @@ labels <- c('a) NH4', 'b) NO3', 'c) SRP',
             'g) Chl-a', 'h) T-autoch',  'i) A-alloch') 
 
 names(labels) <- levels
-long_both$variable <- factor(long_both$variable, levels = levels)
+long_vars$variable <- factor(long_vars$variable, levels = levels)
 
 ### space time reservoir box plots
 # use stat compare means
-ggplot(long_both, aes(x = as.factor(axis), y = cv, fill = Reservoir)) +
+ggplot(long_vars, aes(x = as.factor(axis), y = cv, fill = Reservoir)) +
   geom_boxplot(outlier.shape = NA) +
   geom_blank(aes(y=ymax, x = as.factor(axis)))+
   facet_wrap(~variable, scales = 'free', labeller = labeller(variable = labels)) +
@@ -151,7 +153,7 @@ ggplot(long_both, aes(x = as.factor(axis), y = cv, fill = Reservoir)) +
 
 #######################################################################################################################################
 # format CV data into table of min, max, mean for CVspace and CV time
-cv_long <- long_both %>% 
+cv_long <- long_vars %>% 
   select(Reservoir, variable, axis, cv) 
 
 cv_long <- cv_long %>% 
@@ -178,3 +180,43 @@ colnames(table) <- c('Reservoir', 'Variable', 'Min Time', 'Max Time', 'Mean Time
 
 write.csv(table, './Data/summary_stats_cv.csv', row.names = FALSE)
 
+###########################################################################################################################################
+# compare across stoichiometric variables
+vars_stoich <-  c('CV_TNTP', 'CV_DNDP', 'CV_DPTP', 'CV_DNTN')
+stoich <- long_both[long_both$variable %in% vars_stoich,]
+
+ggplot(stoich, aes(x = as.factor(axis), y = cv, fill = Reservoir)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_blank(aes(y=ymax, x = as.factor(axis)))+
+  facet_wrap(~variable, scales = 'free') +
+  geom_point(position=position_jitterdodge(),alpha=0.7, size = 2, aes(color = Reservoir)) + 
+  stat_compare_means(label = "p.signif", label.y.npc = 0.75, size = 4) + 
+  stat_compare_means(aes(group = axis), 
+                     label = "p.signif", label.y.npc = 0.95,
+                     size = 4,
+                     method = 'wilcox.test',
+                     label.x.npc = 0.5) +
+  scale_fill_manual(values = r_col) +
+  scale_color_manual(values = r_col) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 14),
+        axis.text = element_text(size = 14)) +  
+  xlab('Axis') +
+  ylab('Coefficient of Variation (CV)')
+
+stoich_wide <- stoich %>% 
+  pivot_wider(names_from = axis, values_from = cv)
+
+tntp <- stoich_wide[stoich_wide$variable=='CV_TNTP',]
+wilcox.test(tntp$time, tntp$space)
+
+dndp <- stoich_wide[stoich_wide$variable=='CV_DNDP',]
+wilcox.test(dndp$time, dndp$space)
+
+dptp <- stoich_wide[stoich_wide$variable=='CV_DPTP',]
+wilcox.test(dptp$time, dptp$space)
+
+dntn <- stoich_wide[stoich_wide$variable=='CV_DNTN',]
+wilcox.test(dntn$time, dntn$space)
