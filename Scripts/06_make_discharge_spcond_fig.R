@@ -73,8 +73,9 @@ inf <- ggplot(data = flow, aes(x = Date, y = Flow_cms)) +
   #scale_shape_manual(values = c(21,19)) +
   ylab('Discharge (m3/s)') +
   theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank()) +
-  labs(color = 'Site', size = NULL)
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 15)) +
+  labs(shape = 'Site', color = 'Reservoir', size = NULL)
 inf
 
 spc <-  ggplot(data = data, aes(x = Date, y = Sp_cond_uScm)) +
@@ -95,8 +96,8 @@ data <- data %>%
   mutate(labels = Site)
 
 spc <-  ggplot(data = data, aes(x = distance_m, y = Sp_cond_uScm)) +
-  geom_point(data = data[data$distance_from_stream > 0,], aes(col = as.factor(month(Date)), size = 2)) +
-  geom_point(data = data[data$distance_from_stream < 1,], aes(col = as.factor(month(Date)), size = 2, shape = res_site)) +
+  geom_point(data = data[data$distance_from_stream > 0,], aes(col = as.factor(month(Date))), size = 4) +
+  geom_point(data = data[data$distance_from_stream < 1,], aes(col = as.factor(month(Date)), shape = res_site), size = 4) +
   geom_line(data = data[data$Site!='200',], aes(col = as.factor(month(Date)))) +
   geom_line(data = data[data$Site!='100' & data$Site!='99',], aes(col = as.factor(month(Date)))) +
   facet_wrap(~Reservoir, scales = 'free_x') +
@@ -104,9 +105,10 @@ spc <-  ggplot(data = data, aes(x = distance_m, y = Sp_cond_uScm)) +
   scale_size(guide = 'none') +
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank()) +
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 15)) +
   ylab('Specific Conductivity (us/cm)') +
-  labs(color = 'Month', shape = 'Location', size = "")+
+  labs(color = 'Month', shape = 'Site', size = "")+
   scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') 
   
 spc
