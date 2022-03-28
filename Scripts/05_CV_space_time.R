@@ -129,7 +129,7 @@ long_vars$variable <- factor(long_vars$variable, levels = levels)
 
 ### space time reservoir box plots
 # use stat compare means
-ggplot(long_vars, aes(x = as.factor(axis), y = cv, fill = Reservoir)) +
+cv <- ggplot(long_vars, aes(x = as.factor(axis), y = cv, fill = Reservoir)) +
   geom_boxplot(outlier.shape = NA) +
   geom_blank(aes(y=ymax, x = as.factor(axis)))+
   facet_wrap(~variable, scales = 'free', labeller = labeller(variable = labels)) +
@@ -150,6 +150,8 @@ ggplot(long_vars, aes(x = as.factor(axis), y = cv, fill = Reservoir)) +
   ylab('Coefficient of Variation (CV)')
 
 # export figure and add bars showing pairing of signif values in ppt
+ggsave('./Figures/Fig5_CV_space_time.png', cv, scale = 0.8, height = 8, width = 10)
+
 
 #######################################################################################################################################
 # format CV data into table of min, max, mean for CVspace and CV time
