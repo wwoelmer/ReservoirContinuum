@@ -1,4 +1,4 @@
-# script to download published data from EDI
+# download published data from EDI
 
 eems  <-   "https://pasta.lternet.edu/package/data/eml/edi/841/1/f63272976bcd151f8e879cbd14d9a9ce"  # URL from EDI: https://portal.edirepository.org/nis/codeGeneration?packageId=edi.841.1&statisticalFileType=r
 try(download.file(eems, destfile = paste0("./Data/raw_data/eems_edi.csv"), 
@@ -31,3 +31,12 @@ try(download.file(ctd, destfile = paste0("./Data/raw_data/ctd_edi.csv"),
 cat <- "https://pasta.lternet.edu/package/data/eml/edi/271/6/23a191c1870a5b18cbc17f2779f719cf" 
 try(download.file(cat, destfile = paste0("./Data/raw_data/catwalk_edi.csv"), 
                   method = "curl"))
+
+bvr_vol <- "https://raw.githubusercontent.com/CareyLabVT/BVR-GLM/master/Data_Output/09Apr20_BVR_WaterLevelDailyVol.csv"
+try(download.file(bvr_vol, destfile = paste0("./Data/raw_data/bvr_vol_git.csv"), 
+                  method = "curl"))
+
+bvr_flow <- "https://raw.githubusercontent.com/CareyLabVT/BVR-GLM/master/inputs/BVR_flow_calcs_new.csv"
+try(download.file(bvr_flow, destfile = paste0("./Data/raw_data/bvr_flow_calcs_git.csv"), 
+                  method = "curl"))
+
