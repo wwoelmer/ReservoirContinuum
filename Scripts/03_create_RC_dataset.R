@@ -127,10 +127,22 @@ spcond_all <- rbind(spcond, ctd_sp2)
 
 
 ###################
+# read in bvr outflow data
+# make this FLOW for BVR 50
+outflow <- read.csv('./Data/bvr_outflow_calcs.csv')
+colnames(outflow) <- c('Date', 'Flow_cms')
+outflow$Date <- as.Date(outflow$Date)
+outflow$Reservoir <- 'BVR'
+outflow$Site <- '50'
+outflow$Site <- as.factor(outflow$Site)
+
+flow <- rbind(inf, outflow)
+
+###################
 # combine datasets
 
 all <- left_join(chem, chl)
-all <- left_join(all, inf)
+all <- left_join(all, flow)
 all <- left_join(all, eems)
 all <- left_join(all, dist)
 all <- left_join(all, spcond_all)
