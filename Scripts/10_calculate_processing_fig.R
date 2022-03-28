@@ -45,17 +45,14 @@ for(i in 1:length(unique(long_load$Date))){
   }
 }
 
+# assign flows for all BVR sites based on B50
+for(i in 1:length(unique(long_load$Date))){
+  if(length(long_load$Flow_cms[long_load$site_res=='BVR_50'& long_load$Date==unique(long_load$Date)[i]]) > 1){
+    long_load$Flow_cms[long_load$site_res %in% bvr_res & long_load$Date==unique(long_load$Date)[i]] <- long_load$Flow_cms[long_load$site_res=='BVR_50'& long_load$Date==unique(long_load$Date)[i]]
+  }
+}
 
-# need to add in flows for B50 from BVR GLM outflow estimates: https://github.com/CareyLabVT/BVR-GLM/blob/master/inputs/BVR_spillway_outflow_2014_2019_20210223_nldasInflow.csv
-long_load$Flow_cms[long_load$site_res %in% bvr_res & long_load$Date=='2019-04-29'] <- 0.0204
-long_load$Flow_cms[long_load$site_res %in% bvr_res & long_load$Date=='2019-05-30'] <- 0.0329
-long_load$Flow_cms[long_load$site_res %in% bvr_res & long_load$Date=='2019-06-27'] <- 0.0126
-long_load$Flow_cms[long_load$site_res %in% bvr_res & long_load$Date=='2019-07-18'] <- 0.0016
-long_load$Flow_cms[long_load$site_res %in% bvr_res & long_load$Date=='2019-08-22'] <- 0.0173
-long_load$Flow_cms[long_load$site_res %in% bvr_res & long_load$Date=='2019-09-20'] <- 0.005
-long_load$Flow_cms[long_load$site_res %in% bvr_res & long_load$Date=='2019-10-04'] <- 0.0097
-
-
+# calculate loads for each day 
 long_load <- long_load %>% 
   group_by(Date, Reservoir, Site) %>% 
   mutate(load = value*Flow_cms)
