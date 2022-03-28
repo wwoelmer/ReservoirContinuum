@@ -10,7 +10,6 @@ library(ggpmisc)
 r_col <- c('olivedrab3', 'royalblue1')
 
 
-#data <- read.csv('./Data/continuum_pf.csv')
 data <-read.csv('./Data/continuum_data.csv')
 data$Date <- as.Date(data$Date)
 data$distance_from_stream <- as.numeric(data$distance_from_stream)
@@ -97,8 +96,8 @@ b <- ggplot(data = long[long$Reservoir=='BVR' & long$distance_from_stream > 0,],
         legend.position = "none") +
   ggtitle('Beaverdam Reservoir')
 b
-ggarrange(b, f, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
-
+plot <- ggarrange(b, f, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right')
+ggsave('./Figures/Fig3_timeseries.png', plot)
 
 #################################################################################################################
 # make Thornton figure with observed data
@@ -204,26 +203,10 @@ chl <- ggplot(thorn, aes(x = distance_from_stream, y = chla, color = Reservoir))
   ggtitle('Chlorophyll-a')
 
 
-ggarrange(n, p, chl, sn, sp, ncol = 3, nrow = 2, common.legend = TRUE)
+plot2 <- ggarrange(n, p, chl, sn, sp, ncol = 3, nrow = 2, common.legend = TRUE)
+ggsave('./Figures/Fig7_TNTPchl_thornton.png', plot2, width = 7, height = 4.6)
 
 
-thorn_mean <- thorn %>% 
-  pivot_longer(total_n:sd_soluble_n, names_to = 'variable', values_to = 'value') 
-  
-
-ggplot(data = thorn_mean[thorn_mean$variable %in% means, ], aes(x = distance_from_stream, y = value, col = Reservoir)) +
-  geom_point(size = 2) +
-#  geom_ribbon(data = thorn_mean[thorn_mean$variable %in% sds, ], aes(ymin = value, ymax = -value, color = Reservoir)) +
-  #geom_smooth(aes(col = Reservoir), se = FALSE) +
-  geom_line(size = 2) +
-  xlab('Distance from stream (m)') +
-  ylab('Concentration') +
-  facet_wrap(~variable, scales = "free_y") + 
-  scale_color_manual(values = r_col) +
-  theme_bw() +
-  labs(col = 'Reservoir') +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank()) 
 
 ############################################################################################################
 ### stoiciometry figure
@@ -233,6 +216,7 @@ levels <- c('TN_TP', 'DN_DP', 'DP_TP', 'DN_TN')
 labels <- c('TN_TP', 'DN_DP', 'DP_TP', 'DN_TN')
 names(labels) <- levels
 stoich$variable <- factor(stoich$variable, levels = levels)
+
 
 
 ## FCR
@@ -251,6 +235,7 @@ fs <- ggplot(data = stoich[stoich$Reservoir=='FCR' & stoich$distance_from_stream
   ggtitle('Falling Creek Reservoir')
 
 ## BVR
+bvr <- stoich[stoich$Reservoir=='BVR' & stoich$distance_from_stream > 0 & stoich$variable=='DN_DP',]
 bs <- ggplot(data = stoich[stoich$Reservoir=='BVR' & stoich$distance_from_stream > 0,], aes(x = distance_m, y = value, col = Month)) +
   geom_point(size = 2) +
   geom_smooth(aes(col = Month), se = FALSE) +
@@ -265,8 +250,9 @@ bs <- ggplot(data = stoich[stoich$Reservoir=='BVR' & stoich$distance_from_stream
         legend.position = "none") +
   ggtitle('Beaverdam Reservoir')
 
-
-ggarrange(bs, fs, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
+bs
+plot3 <- ggarrange(bs, fs, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
+ggsave('./Figures/SIFig_stoich_timeseries.png', plot3)
 
 
 
