@@ -97,7 +97,7 @@ b <- ggplot(data = long[long$Reservoir=='BVR' & long$distance_from_stream > 0,],
   ggtitle('Beaverdam Reservoir')
 b
 plot <- ggarrange(b, f, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right')
-ggsave('./Figures/Fig3_timeseries.png', plot)
+#ggsave('./Figures/Fig3_timeseries.png', plot)
 
 #################################################################################################################
 # make Thornton figure with observed data
@@ -204,7 +204,7 @@ chl <- ggplot(thorn, aes(x = distance_from_stream, y = chla, color = Reservoir))
 
 
 plot2 <- ggarrange(n, p, chl, sn, sp, ncol = 3, nrow = 2, common.legend = TRUE)
-ggsave('./Figures/Fig7_TNTPchl_thornton.png', plot2, width = 7, height = 4.6)
+#ggsave('./Figures/Fig7_TNTPchl_thornton.png', plot2, width = 7, height = 4.6)
 
 
 
@@ -224,7 +224,7 @@ fs <- ggplot(data = stoich[stoich$Reservoir=='FCR' & stoich$distance_from_stream
   geom_point(size = 2) +
   geom_smooth(aes(col = Month), se = FALSE) +
   xlab('Distance from stream (m)') +
-  ylab('Concentration') +
+  ylab('Ratio') +
   facet_wrap(~variable, scales = "free_y") + 
   scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
   theme_bw() +
@@ -240,7 +240,7 @@ bs <- ggplot(data = stoich[stoich$Reservoir=='BVR' & stoich$distance_from_stream
   geom_point(size = 2) +
   geom_smooth(aes(col = Month), se = FALSE) +
   xlab('Distance from stream (m)') +
-  ylab('Concentration') +
+  ylab('Ratio') +
   facet_wrap(~variable, scales = "free_y") + 
   scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
   theme_bw() +
