@@ -1,5 +1,9 @@
 #install.packages('rLakeAnalyzer')
 library(rLakeAnalyzer)
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(ggpubr)
 
 ctd <- read.csv('./Data/raw_data/ctd_edi.csv')
 
@@ -103,6 +107,7 @@ s <- ggplot(data = metrics, aes(x = Date, y =schmidt_stability, col = Reservoir)
 
 t <- ggplot(data = metrics, aes(x = Date, y =thermo_depth, col = Reservoir)) +
   geom_line(size = 1.4) +
+  scale_y_reverse() +
   ylab("Thermocline Depth (m)") +
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
