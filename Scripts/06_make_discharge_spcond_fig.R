@@ -34,15 +34,6 @@ flow <- flow[flow$Date!='2019-09-20' & flow$Date!='2019-07-22',]
 # assign flows for F50 based on F01 
 flow$Flow_cms[flow$res_site=='FCR_50'] <- flow$Flow_cms[flow$res_site=='FCR_1']
 
-# need to add in flows for B50 from BVR GLM outflow estimates: https://github.com/CareyLabVT/BVR-GLM/blob/master/inputs/BVR_spillway_outflow_2014_2019_20210223_nldasInflow.csv
-flow$Flow_cms[flow$res_site %in% bvr_res & flow$Date=='2019-04-29'] <- 0.0204
-flow$Flow_cms[flow$res_site %in% bvr_res & flow$Date=='2019-05-30'] <- 0.0329
-flow$Flow_cms[flow$res_site %in% bvr_res & flow$Date=='2019-06-27'] <- 0.0126
-flow$Flow_cms[flow$res_site %in% bvr_res & flow$Date=='2019-07-18'] <- 0.0016
-flow$Flow_cms[flow$res_site %in% bvr_res & flow$Date=='2019-08-22'] <- 0.0173
-flow$Flow_cms[flow$res_site %in% bvr_res & flow$Date=='2019-09-20'] <- 0.005
-flow$Flow_cms[flow$res_site %in% bvr_res & flow$Date=='2019-10-04'] <- 0.0097
-
 flow <- flow[flow$res_site!='FCR_1',]
 data <- data[data$res_site!='FCR_1',]
 
@@ -70,7 +61,7 @@ inf <- ggplot(data = flow, aes(x = Date, y = Flow_cms)) +
   geom_line(data = flow[flow$Reservoir=='BVR',], aes(shape = labels, col = Reservoir)) +
   theme_bw() +
   scale_color_manual(values = r_col) +
-  #scale_shape_manual(values = c(21,19)) +
+  scale_shape_manual(values = c(21,19)) +
   ylab('Discharge (m3/s)') +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
@@ -104,13 +95,16 @@ spc <-  ggplot(data = data, aes(x = distance_m, y = Sp_cond_uScm)) +
   #geom_label(aes(label = labels), na.rm = TRUE) +
   scale_size(guide = 'none') +
   theme_bw() +
+  scale_shape_manual(values = c(15, 0, 2, 17)) +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         text = element_text(size = 15)) +
   ylab('Specific Conductivity (us/cm)') +
+  xlab('Distance (m)') +
   labs(color = 'Month', shape = 'Site', size = "")+
   scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') 
   
 spc
 
-ggarrange(inf, spc, nrow = 1, ncol = 2, legend = 'right') 
+sp_flow <- ggarrange(inf, spc, nrow = 1, ncol = 2, legend = 'right', labels = c('a', 'b')) 
+ggsave('./Figures/Fig4_spcond_flow.png', sp_flow)
