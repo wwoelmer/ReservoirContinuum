@@ -4,7 +4,7 @@ library(Hmisc)
 library(tidyverse)
 library(corrplot)
 
-data <-read.csv('./Data/continuum_ww.csv')
+data <-read.csv('./Data/continuum_data.csv')
 data$Date <- as.Date(data$DateTime)
 data$connectivity <- as.factor(data$connectivity)
 
