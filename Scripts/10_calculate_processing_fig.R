@@ -169,7 +169,8 @@ b_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$va
 b_sp
 
 
-ggarrange(b_sp, f_sp, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
+process <- ggarrange(b_sp, f_sp, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
+ggsave('./Figures/Fig6_processing.png', process)
 
 ##########################################################################################################################################
 
