@@ -12,11 +12,12 @@ r_col <- c('olivedrab3', 'royalblue1')
 
 
 data <-read.csv('./Data/continuum_data.csv')
+hist(data$SRP_ugL)
+
 
 long <- data %>%   
   select(Site, Reservoir, Date, distance_from_stream, distance_m, Flow_cms, TN_ugL:T) %>% 
   pivot_longer(TN_ugL:T, names_to = 'variable', values_to = 'value')
-
 
 
 #########################################################################################################################
@@ -148,6 +149,13 @@ cv <- ggplot(long_vars, aes(x = as.factor(axis), y = cv, fill = Reservoir)) +
         axis.text = element_text(size = 14)) +  
   xlab('Axis') +
   ylab('Coefficient of Variation (CV)')
+cv
+
+# check p-value of SRP which is marginally significant
+srp_wide <- long_vars %>% 
+  pivot_wider(names_from = axis, values_from = cv)
+srp <- srp_wide[srp_wide$variable=='CV_SRP',]
+wilcox.test(srp$time, srp$space)
 
 # export figure and add bars showing pairing of signif values in ppt
 ggsave('./Figures/Fig5_CV_space_time.png', cv, scale = 0.8, height = 8, width = 10)
@@ -187,7 +195,7 @@ write.csv(table, './Data/summary_stats_cv.csv', row.names = FALSE)
 vars_stoich <-  c('CV_TNTP', 'CV_DNDP', 'CV_DPTP', 'CV_DNTN')
 stoich <- long_both[long_both$variable %in% vars_stoich,]
 
-ggplot(stoich, aes(x = as.factor(axis), y = cv, fill = Reservoir)) +
+stoich_cv <- ggplot(stoich, aes(x = as.factor(axis), y = cv, fill = Reservoir)) +
   geom_boxplot(outlier.shape = NA) +
   geom_blank(aes(y=ymax, x = as.factor(axis)))+
   facet_wrap(~variable, scales = 'free') +
@@ -207,6 +215,9 @@ ggplot(stoich, aes(x = as.factor(axis), y = cv, fill = Reservoir)) +
         axis.text = element_text(size = 14)) +  
   xlab('Axis') +
   ylab('Coefficient of Variation (CV)')
+
+ggsave('./Figures/SIFig_stoich_cv.png', stoich_cv)
+
 
 stoich_wide <- stoich %>% 
   pivot_wider(names_from = axis, values_from = cv)
