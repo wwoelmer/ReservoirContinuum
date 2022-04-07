@@ -33,12 +33,18 @@ chem <- chem %>%
   filter(Site!=100.1) %>% 
   select(-Rep)
 
+# add smallest value to srp data for ratios and processing calc when dividing by 0
+min_val <- min(chem[chem$SRP_ugL>0,"SRP_ugL"], na.rm = TRUE)
+
+chem <- chem %>% 
+  mutate(SRP_ugL_min = SRP_ugL + min_val)  
 
 chem <- chem %>% 
   mutate(TN_TP = TN_ugL/TP_ugL) %>% 
-  mutate(DP_TP = SRP_ugL/TP_ugL) %>% 
+  mutate(DP_TP = SRP_ugL_min/TP_ugL) %>% 
   mutate(DN_TN = (NH4_ugL + NO3NO2_ugL)/TN_ugL) %>% 
-  mutate(DN_DP = (NH4_ugL + NO3NO2_ugL)/SRP_ugL)
+  mutate(DN_DP = (NH4_ugL + NO3NO2_ugL)/SRP_ugL_min) %>% 
+  select(-SRP_ugL_min)
 
 ###################
 # read in chl
