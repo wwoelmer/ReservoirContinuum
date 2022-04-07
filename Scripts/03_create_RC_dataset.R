@@ -33,11 +33,8 @@ chem <- chem %>%
   filter(Site!=100.1) %>% 
   select(-Rep)
 
-# some SRP values are 0, so add very very small value to these for dividing by this value later
-min_val <- min(chem[chem$SRP_ugL>0,"SRP_ugL"], na.rm = TRUE)
 
 chem <- chem %>% 
-  mutate(SRP_ugL = SRP_ugL + min_val) %>% 
   mutate(TN_TP = TN_ugL/TP_ugL) %>% 
   mutate(DP_TP = SRP_ugL/TP_ugL) %>% 
   mutate(DN_TN = (NH4_ugL + NO3NO2_ugL)/TN_ugL) %>% 
