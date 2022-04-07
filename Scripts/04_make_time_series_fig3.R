@@ -15,21 +15,15 @@ data$Date <- as.Date(data$Date)
 data$distance_from_stream <- as.numeric(data$distance_from_stream)
 
 
-# some SRP values are 0, so add very very small value to these for dividing by this value later
-#min_val <- min(data[data$SRP_ugL>0,"SRP_ugL"])
-#data$SRP_ugL <- data$SRP_ugL + min_val
-
-long <- data %>%   
+long_data <- data %>%   
   select(Site, Reservoir, Date, distance_from_stream, distance_m, Flow_cms, TN_ugL:T) %>% 
   pivot_longer(TN_ugL:T, names_to = 'variable', values_to = 'value')
 
 vars_keep <-  c('T', 'A', 
                 'DOC_mgL',  'Chla_ugL','TN_ugL', 'TP_ugL',
                 'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL') 
-vars_stoich <-  c('TN_TP', 'DN_DP', 'DP_TP', 'DN_TN')
-stoich <- long[long$variable %in% vars_stoich,]
 
-long <- long[long$variable %in% vars_keep,]
+long <- long_data[long_data$variable %in% vars_keep,]
 
 levels <- c('NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
             'DOC_mgL',  'TN_ugL', 'TP_ugL',
@@ -210,17 +204,25 @@ plot2 <- ggarrange(n, p, chl, sn, sp, ncol = 3, nrow = 2, common.legend = TRUE)
 
 ############################################################################################################
 ### stoiciometry figure
+# remove 07/22/2019 sampling date (replicate for 07/18/2019)
+data <- data[data$Date!='2019-07-22', ]
 
-stoich$Month <- as.factor(month(stoich$Date))
+long_stoich <- data %>%   
+  select(Site, Reservoir, Date, distance_from_stream, distance_m, TN_TP:DN_DP) %>% 
+  pivot_longer(TN_TP:DN_DP, names_to = 'variable', values_to = 'value')
+
+
+long_stoich$Month <- as.factor(month(long_stoich$Date))
 levels <- c('TN_TP', 'DN_DP', 'DP_TP', 'DN_TN')
 labels <- c('TN_TP', 'DN_DP', 'DP_TP', 'DN_TN')
 names(labels) <- levels
-stoich$variable <- factor(stoich$variable, levels = levels)
+long_stoich$variable <- factor(long_stoich$variable, levels = levels)
 
 
 
 ## FCR
-fs <- ggplot(data = stoich[stoich$Reservoir=='FCR' & stoich$distance_from_stream > 0,], aes(x = distance_m, y = value, col = Month)) +
+fcr <- long_stoich[long_stoich$Reservoir=='FCR' & long_stoich$distance_from_stream > 0,]
+fs <- ggplot(data = long_stoich[long_stoich$Reservoir=='FCR' & long_stoich$distance_from_stream > 0,], aes(x = distance_m, y = value, col = Month)) +
   geom_point(size = 2) +
   geom_smooth(aes(col = Month), se = FALSE) +
   xlab('Distance from stream (m)') +
@@ -233,10 +235,10 @@ fs <- ggplot(data = stoich[stoich$Reservoir=='FCR' & stoich$distance_from_stream
         panel.grid.minor = element_blank(),
         legend.position = "none") +
   ggtitle('Falling Creek Reservoir')
-
+fs
 ## BVR
-bvr <- stoich[stoich$Reservoir=='BVR' & stoich$distance_from_stream > 0 & stoich$variable=='DN_DP',]
-bs <- ggplot(data = stoich[stoich$Reservoir=='BVR' & stoich$distance_from_stream > 0,], aes(x = distance_m, y = value, col = Month)) +
+bvr <- long_stoich[long_stoich$Reservoir=='BVR' & long_stoich$distance_from_stream > 0 & long_stoich$variable=='DN_DP',]
+bs <- ggplot(data = long_stoich[long_stoich$Reservoir=='BVR' & long_stoich$distance_from_stream > 0,], aes(x = distance_m, y = value, col = Month)) +
   geom_point(size = 2) +
   geom_smooth(aes(col = Month), se = FALSE) +
   xlab('Distance from stream (m)') +
