@@ -46,6 +46,7 @@ range <- long %>%
 ######################################################################################################################
 ### time series color by date, one for each reservoir
 
+
 ## FCR
 labels_f <- c('d) NH4 (μg/L)', 'e) NO3 (μg/L)', 'f) SRP (μg/L)',
             'j) DOC (mg/L)', 'k) TN (μg/L)', 'l) TP (μg/L)',
@@ -93,6 +94,51 @@ b
 plot <- ggarrange(b, f, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right')
 #ggsave('./Figures/Fig3_timeseries.png', plot)
 
+###################################################################################################################
+## JASM plots
+jasm_vars <- c('NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL', 'TN_ugL', 'TP_ugL', 'Chla_ugL')
+jasm_long <- long[long$variable %in% jasm_vars,]
+jasm_levels <- c('TN_ugL', 'TP_ugL', 'Chla_ugL', 'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL')
+jasm_labels_f <- c('d) TN (μg/L)', 'e) TP (μg/L)', 'f) Chl-a (μg/L)',
+                   'j) NH4 (μg/L)', 'k) NO3 (μg/L)', 'l) SRP (μg/L)') 
+names(jasm_labels_f) <- jasm_levels
+jasm_long$variable <- factor(jasm_long$variable, levels = jasm_levels)
+
+f <- ggplot(data = jasm_long[jasm_long$Reservoir=='FCR' & jasm_long$distance_from_stream > 0,], aes(x = distance_m, y = value, col = Month)) +
+  geom_point(size = 2) +
+  geom_smooth(aes(col = Month), se = FALSE) +
+  xlab('Distance from stream (m)') +
+  ylab('Concentration') +
+  facet_wrap(~variable, scales = "free_y", labeller = labeller(variable = jasm_labels_f)) + 
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  ggtitle('Falling Creek Reservoir')
+# concentration units: add in figure caption?
+f
+
+## BVR
+jasm_labels_b <- c('a) TN (μg/L)', 'b) TP (μg/L)', 'c) Chl-a (μg/L)',
+             'g) NH4 (μg/L)', 'h) NO3 (μg/L)', 'i) SRP (μg/L)') 
+names(jasm_labels_b) <- jasm_levels
+jasm_long$variable <- factor(jasm_long$variable, levels = jasm_levels)
+b <- ggplot(data = jasm_long[jasm_long$Reservoir=='BVR' & jasm_long$distance_from_stream > 0,], aes(x = distance_m, y = value, col = Month)) +
+  geom_point(size = 2) +
+  geom_smooth(aes(col = Month), se = FALSE) +
+  xlab('Distance from stream (m)') +
+  ylab('Concentration') +
+  facet_wrap(~variable, scales = "free_y", labeller = labeller(variable = jasm_labels_b)) + 
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  theme_bw() +
+  labs(col = 'Month') +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none") +
+  ggtitle('Beaverdam Reservoir')
+b
+plot <- ggarrange(b, f, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right')
+plot
 #################################################################################################################
 # make Thornton figure with observed data
 thorn <- data %>% 
