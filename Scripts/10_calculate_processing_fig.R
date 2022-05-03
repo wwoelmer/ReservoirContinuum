@@ -11,6 +11,13 @@ r_col <- c('olivedrab3', 'royalblue1')
 data <-read.csv('./Data/continuum_data.csv')
 data$Date <- as.Date(data$Date)
 
+# some SRP values are 0, so add very very small value to these for dividing by this value later
+min_val <- min(data[data$SRP_ugL>0,"SRP_ugL"], na.rm = TRUE)
+
+data <- data %>% 
+  mutate(SRP_ugL = SRP_ugL + min_val)  
+  
+
 long <- data %>%   
   select(Site, Reservoir, Date, distance_from_stream, distance_m, Flow_cms, TN_ugL:T, Sp_cond_uScm) %>% 
   pivot_longer(TN_ugL:Sp_cond_uScm, names_to = 'variable', values_to = 'value')
@@ -127,6 +134,7 @@ f_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$va
                aes(x = distance_m, y = delta_load_spatial)) +
   facet_wrap(~variable, scales = 'free_y', ncol = 3,  labeller = labeller(variable = labels_f)) +
   geom_line(aes(col = as.factor(month(Date)))) +
+  #geom_line(col = 'white') +
   geom_hline(aes(yintercept = 0)) +
   geom_point(aes(col = as.factor(month(Date))), size = 2) +
   geom_point(aes(x = 710, y = delta_load_simple, col = as.factor(month(Date))), size = 4)+
@@ -152,12 +160,10 @@ b_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$va
                aes(x = distance_m, y = delta_load_spatial)) +
   facet_wrap(~variable, scales = 'free_y', ncol = 3,  labeller = labeller(variable = labels_b)) +
   geom_line(aes(col = as.factor(month(Date)))) +
+  #geom_line(col = 'white') +
   geom_hline(aes(yintercept = 0)) +
   geom_point(aes(col = as.factor(month(Date))), size = 2) +
   geom_point(aes(x = 1200, y = delta_load_simple, col = as.factor(month(Date))), size = 4)+
-  #geom_ribbon(aes(ymin = delta_load_spatial -loq_load, ymax = delta_load_spatial + loq_load, 
-  #                col = as.factor(month(Date)), fill = as.factor(month(Date))), 
-  #            alpha = 0.1, linetype = 0)+
   scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') +
   scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
   theme_bw() +
@@ -170,6 +176,7 @@ b_sp
 
 
 process <- ggarrange(b_sp, f_sp, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
+process
 ggsave('./Figures/Fig6_processing.png', process)
 
 ##########################################################################################################################################
