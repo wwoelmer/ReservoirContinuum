@@ -41,6 +41,10 @@ mean(bvr$wrt_d)
 sd(bvr$wrt_d)
 std.error(bvr$wrt_d)
 
+# how many times larger is max residence time compared to smallest?
+max(bvr$wrt_d)/min(bvr$wrt_d)
+max(fcr$wrt_d)/min(fcr$wrt_d)
+
 # Plot
 ggplot()+
   geom_line(bvr,mapping=aes(x=Date,y=wrt_d,color='BVR',group=1),size=1)+
@@ -51,6 +55,10 @@ ggplot()+
   ylab('Residence Time (Days)') +
   labs(color = 'Reservoir') +
   scale_x_date(date_breaks = "months", date_labels = "%b")
+
+bvr$Reservoir <- 'BVR'
+fcr$Reservoir <- 'FCR'
+wrt <- rbind(bvr, fcr)
 
 write.csv(wrt,"./Data/RC_WRT.csv")
 
