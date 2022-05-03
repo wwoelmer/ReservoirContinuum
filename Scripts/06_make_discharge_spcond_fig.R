@@ -62,7 +62,7 @@ inf <- ggplot(data = flow, aes(x = Date, y = Flow_cms)) +
   theme_bw() +
   scale_color_manual(values = r_col) +
   scale_shape_manual(values = c(15, 0, 1, 2, 16, 17)) +
-  ylab('Discharge (m3/s)') +
+  ylab('Discharge (m^3/s)') +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         text = element_text(size = 15)) +
@@ -94,7 +94,7 @@ spc <-  ggplot(data = data, aes(x = distance_m, y = Sp_cond_uScm)) +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         text = element_text(size = 15)) +
-  ylab('Specific Conductivity (us/cm)') +
+  ylab('Specific Conductivity (μs/cm)') +
   xlab('Distance (m)') +
   labs(color = 'Month', shape = 'Site', size = "")+
   scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') 
