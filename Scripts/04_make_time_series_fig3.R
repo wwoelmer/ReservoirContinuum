@@ -40,8 +40,36 @@ long$Month <- as.factor(month(long$Date))
 range <- long %>% 
   filter(distance_from_stream > 0) %>% 
   group_by(variable, Month, Reservoir) %>% 
-  mutate(range = round(abs(range(value, na.rm = TRUE)[1] - range(value, na.rm = TRUE)[2]), 4)) %>% 
-  distinct(Reservoir, Date, variable, .keep_all = TRUE)
+  mutate(range = round(abs(range(value, na.rm = TRUE)[1] - range(value, na.rm = TRUE)[2]), 4)) %>%
+  distinct(Reservoir, Date, variable, .keep_all = TRUE) %>% 
+  select(Reservoir, Date, variable, range)
+ggplot(range, aes(x = Date, y = range, color = Reservoir)) +
+  geom_line(size = 2) +
+  facet_wrap(~variable,  scales = "free_y") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+peak <- long %>% 
+  filter(distance_from_stream > 0) %>% 
+  group_by(Reservoir, variable, Date) %>% 
+  mutate(peak = which(max(value)))
+
+out <- plyr::ddply(long[long$distance_from_stream > 0,], c("Reservoir", "variable", "Date"), function(x) {
+  idx <- which(x$value == max(x$value))
+  data.frame(Site = x$Site[idx], 
+             value = x$value[idx])
+})
+
+ggplot(out)
+
+for(i in 1:length(peak_vars)){
+  sub <- long[long$variable==vars_keep[i],]
+  sub <- sub[sub$distance_from_stream > 0,]
+  for(j in 1:2){
+   sub <-  
+  }
+}
 
 ######################################################################################################################
 ### time series color by date, one for each reservoir
