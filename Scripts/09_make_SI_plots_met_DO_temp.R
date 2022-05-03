@@ -81,9 +81,10 @@ b <- ggplot(data = do_dist[do_dist$Reservoir=='BVR',], aes(x = distance_m, y = v
   geom_point(size = 3) +
   geom_line(aes(col = as.factor(month(Date)))) +
   xlab('Distance from stream') +
-  ylab('Concentration') +
+  ylab('DO (% Saturation) or Temp (°C)') +
   facet_wrap(~variable, scales = "free") + 
   labs(color = 'Month') +
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') +
   ggtitle('Beaverdam Reservoir') +
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
@@ -92,14 +93,16 @@ b <- ggplot(data = do_dist[do_dist$Reservoir=='BVR',], aes(x = distance_m, y = v
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         strip.text = element_text(size = 12))
+b
 
 f <- ggplot(data = do_dist[do_dist$Reservoir=='FCR',], aes(x = distance_m, y = value, col = as.factor(month(Date)))) +
   geom_point(size = 3) +
   geom_line(aes(col = as.factor(month(Date)))) +
   xlab('Distance from stream') +
-  ylab('Concentration') +
+  ylab('DO (% Saturation) or Temp (°C)') +
   facet_wrap(~variable, scales = "free") + 
   labs(color = 'Month') +
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') +
   ggtitle('Falling Creek Reservoir') +
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
@@ -108,5 +111,6 @@ f <- ggplot(data = do_dist[do_dist$Reservoir=='FCR',], aes(x = distance_m, y = v
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         strip.text = element_text(size = 12))
-
-ggarrange(b, f, nrow = 2)
+f
+siplot <- ggarrange(b, f, nrow = 2)
+ggsave('./Figures/SIFig_watertemp_DO.png', siplot)
