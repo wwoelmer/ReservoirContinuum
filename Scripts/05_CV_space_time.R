@@ -117,13 +117,13 @@ vars_keep <- c( 'CV_chl',  'CV_SRP',  'CV_NO3',
 
 long_vars <- long_both[long_both$variable %in% vars_keep,]
 
-levels <- c('CV_NH4', 'CV_NO3', 'CV_SRP',    
-            'CV_DOC', 'CV_TP',  'CV_TN',    
-            'CV_chl', 'CV_T', 'CV_A')
+levels <- c('CV_TN',  'CV_TP', 'CV_chl', 
+            'CV_NH4', 'CV_NO3', 'CV_SRP',    
+            'CV_DOC', 'CV_T', 'CV_A')
 
-labels <- c('a) NH4', 'b) NO3', 'c) SRP',
-            'd) DOC', 'e) TN', 'f) TP',
-            'g) Chl-a', 'h) T-autoch',  'i) A-alloch') 
+labels <- c('a) TN', 'b) TP', 'c) Chl-a',
+            'd) NH4', 'e) NO3', 'f) SRP',
+            'g) DOC', 'h) T-autoch',  'i) A-alloch') 
 
 names(labels) <- levels
 long_vars$variable <- factor(long_vars$variable, levels = levels)
