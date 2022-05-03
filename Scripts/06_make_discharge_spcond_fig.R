@@ -122,8 +122,9 @@ for(i in 1:nrow(data)){
 
 # calculate avg diff btw stream and in-reservoir sites
 diff <- data %>% 
-  group_by(location, Date, Reservoir) %>% 
-  mutate(mean_spc = mean(data$Sp_cond_uScm, na.rm = TRUE)) #%>% 
+  select(Reservoir, Site, location, Sp_cond_uScm) %>% 
+  group_by(location, Reservoir) %>% 
+  mutate(mean_spc = mean(Sp_cond_uScm, na.rm = TRUE)) #%>% 
   distinct(location, Date, Reservoir, .keep_all = TRUE) %>% 
   select(Date, Reservoir, location, mean_spc)
   
