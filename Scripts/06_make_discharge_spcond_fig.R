@@ -56,12 +56,12 @@ flow <- flow %>%
   mutate(labels = as.factor(Site))
 
 inf <- ggplot(data = flow, aes(x = Date, y = Flow_cms)) +
-  geom_point(aes(col = Reservoir, shape = labels), size = 4) +
-  geom_line(data = flow[flow$Reservoir=='FCR',], aes(shape = labels, col = Reservoir)) +
-  geom_line(data = flow[flow$Reservoir=='BVR',], aes(shape = labels, col = Reservoir)) +
+  geom_point(aes(col = Reservoir, shape = res_site), size = 4) +
+  geom_line(data = flow[flow$Reservoir=='FCR',], aes(shape = res_site, col = Reservoir)) +
+  geom_line(data = flow[flow$Reservoir=='BVR',], aes(shape = res_site, col = Reservoir)) +
   theme_bw() +
   scale_color_manual(values = r_col) +
-  scale_shape_manual(values = c(21,19)) +
+  scale_shape_manual(values = c(15, 0, 1, 2, 16, 17)) +
   ylab('Discharge (m3/s)') +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
@@ -69,22 +69,17 @@ inf <- ggplot(data = flow, aes(x = Date, y = Flow_cms)) +
   labs(shape = 'Site', color = 'Reservoir', size = NULL)
 inf
 
-spc <-  ggplot(data = data, aes(x = Date, y = Sp_cond_uScm)) +
-  geom_point(aes(col = as.factor(Site), shape = as.factor(location)), size = 4) +
-  geom_line(aes(col = as.factor(Site))) +
-  facet_wrap(~Reservoir) +
-  theme_bw() +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank()) +
-  ylab('Specific Conductivity (us/cm)') +
-  labs(color = 'Site', shape = 'Location')
-  #geom_text(data = data[data$location=='Stream',], aes(x = Date, y = Sp_cond_uScm_uScm, label = Site),
-  #          nudge_y = 1)
-spc
-ggarrange(inf, spc, nrow = 1, ncol = 2, legend = 'right') 
+
 
 data <- data %>% 
   mutate(labels = Site)
+
+# calculate avg diff btw stream and in-reservoir sites
+diff <- data %>% 
+  group_by(location, Date, Reservoir) %>% 
+  mutate(mean_spc = mean(data$Sp_cond_uScm, na.rm = TRUE)) #%>% 
+  distinct(location, Date, Reservoir, .keep_all = TRUE) %>% 
+  select(Date, Reservoir, location, mean_spc)
 
 spc <-  ggplot(data = data, aes(x = distance_m, y = Sp_cond_uScm)) +
   geom_point(data = data[data$distance_from_stream > 0,], aes(col = as.factor(month(Date))), size = 4) +
@@ -108,3 +103,19 @@ spc
 
 sp_flow <- ggarrange(inf, spc, nrow = 1, ncol = 2, legend = 'right', labels = c('a', 'b')) 
 ggsave('./Figures/Fig4_spcond_flow.png', sp_flow)
+
+##################################################################################################################
+# other spc plot
+spc <-  ggplot(data = data, aes(x = Date, y = Sp_cond_uScm)) +
+  geom_point(aes(col = as.factor(Site), shape = as.factor(location)), size = 4) +
+  geom_line(aes(col = as.factor(Site))) +
+  facet_wrap(~Reservoir) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) +
+  ylab('Specific Conductivity (us/cm)') +
+  labs(color = 'Site', shape = 'Location')
+#geom_text(data = data[data$location=='Stream',], aes(x = Date, y = Sp_cond_uScm_uScm, label = Site),
+#          nudge_y = 1)
+spc
+ggarrange(inf, spc, nrow = 1, ncol = 2, legend = 'right') 
