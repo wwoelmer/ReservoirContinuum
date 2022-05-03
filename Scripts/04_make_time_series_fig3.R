@@ -25,13 +25,13 @@ vars_keep <-  c('T', 'A',
 
 long <- long_data[long_data$variable %in% vars_keep,]
 
-levels <- c('NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
-            'DOC_mgL',  'TN_ugL', 'TP_ugL',
-            'Chla_ugL','T', 'A')
+levels <- c('TN_ugL', 'TP_ugL', 'Chla_ugL',
+            'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
+            'DOC_mgL','T', 'A')
 
-labels <- c('NH4', 'NO3', 'SRP',
-            'DOC', 'TN', 'TP',
-            'Chl-a', 'T-autoch',  'A-alloch') 
+labels <- c('TN', 'TP', 'Chl-a', 
+            'NH4', 'NO3', 'SRP',
+            'DOC', 'T-autoch',  'A-alloch') 
 names(labels) <- levels
 long$variable <- factor(long$variable, levels = levels)
 long$Month <- as.factor(month(long$Date))
@@ -48,9 +48,9 @@ range <- long %>%
 
 
 ## FCR
-labels_f <- c('d) NH4 (μg/L)', 'e) NO3 (μg/L)', 'f) SRP (μg/L)',
-            'j) DOC (mg/L)', 'k) TN (μg/L)', 'l) TP (μg/L)',
-            'p) Chl-a (μg/L)', 'q) T-autoch (RFU)',  'r) A-alloch (RFU)') 
+labels_f <- c('d) TN (μg/L)', 'e) TP (μg/L)', 'f) Chl-a (μg/L)',
+            'j) NH4 (μg/L)', 'k) NO3 (μg/L)', 'l) SRP (μg/L)',
+            'p) DOC (mg/L)', 'q) T-autoch (RFU)',  'r) A-alloch (RFU)') 
 names(labels_f) <- levels
 long$variable <- factor(long$variable, levels = levels)
 long$Month <- as.factor(month(long$Date))
@@ -71,9 +71,9 @@ f <- ggplot(data = long[long$Reservoir=='FCR' & long$distance_from_stream > 0,],
 f
 
 ## BVR
-labels_b <- c('a) NH4 (μg/L)', 'b) NO3 (μg/L)', 'c) SRP (μg/L)',
-              'g) DOC (mg/L)', 'h) TN (μg/L)', 'i) TP (μg/L)',
-              'm) Chl-a (μg/L)', 'n) T-autoch (RFU)',  'o) A-alloch (RFU)') 
+labels_b <- c('a) TN (μg/L)', 'b) TP (μg/L)', 'c) Chl-a (μg/L)',
+              'g) NH4 (μg/L)', 'h) NO3 (μg/L)', 'i) SRP (μg/L)',
+              'm) DOC (mg/L)', 'n) T-autoch (RFU)',  'o) A-alloch (RFU)') 
 names(labels_b) <- levels
 long$variable <- factor(long$variable, levels = levels)
 long$Month <- as.factor(month(long$Date))
@@ -92,7 +92,8 @@ b <- ggplot(data = long[long$Reservoir=='BVR' & long$distance_from_stream > 0,],
   ggtitle('Beaverdam Reservoir')
 b
 plot <- ggarrange(b, f, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right')
-#ggsave('./Figures/Fig3_timeseries.png', plot)
+plot
+ggsave('./Figures/Fig3_timeseries.png', plot)
 
 ###################################################################################################################
 ## JASM plots
