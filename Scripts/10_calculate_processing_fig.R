@@ -120,13 +120,14 @@ vars_process <- c('T', 'A', 'DOC_mgL',
 test_load <- test_load[test_load$variable %in% vars_process,]
 
 ## set the order of hte plots
-levels <- c('NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
-            'DOC_mgL', 'TN_ugL', 'TP_ugL',
-            'Chla_ugL','T', 'A',  
+levels <- c('TN_ugL', 'TP_ugL','Chla_ugL',
+            'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
+            'DOC_mgL', 'T', 'A',  
             'Sp_cond_uScm')
-labels_f <- c('d) NH4 (μg/L)', 'e) NO3 (μg/L)', 'f) SRP (μg/L)',
-              'j) DOC (mg/L)', 'k) TN (μg/L)', 'l) TP (μg/L)',
-              'p) Chl-a (μg/L)', 'q) T-autoch (RFU)',  'r) A-alloch (RFU)', 'Sp Cond') 
+
+labels_f <- c('d) TN (μg/L)', 'e) TP (μg/L)', 'f) Chl-a (μg/L)',
+              'j) NH4 (μg/L)', 'k) NO3 (μg/L)', 'l) SRP (μg/L)',
+              'p) DOC (mg/L)', 'q) T-autoch (RFU)',  'r) A-alloch (RFU)', 'Sp Cond') 
 names(labels_f) <- levels
 test_load$variable <- factor(test_load$variable, levels = levels)
 
@@ -150,9 +151,9 @@ f_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$va
   ggtitle('Falling Creek Reservoir')
 f_sp
 
-labels_b <- c('a) NH4 (μg/L)', 'b) NO3 (μg/L)', 'c) SRP (μg/L)',
-              'g) DOC (mg/L)', 'h) TN (μg/L)', 'i) TP (μg/L)',
-              'm) Chl-a (μg/L)', 'n) T-autoch (RFU)',  'o) A-alloch (RFU)', 'sp cond') 
+labels_b <- c('a) TN (μg/L)', 'b) TP (μg/L)', 'c) Chl-a (μg/L)',
+              'g) NH4 (μg/L)', 'h) NO3 (μg/L)', 'i) SRP (μg/L)',
+              'm) DOC (mg/L)', 'n) T-autoch (RFU)',  'o) A-alloch (RFU)', 'sp cond') 
 names(labels_b) <- levels
 test_load$variable <- factor(test_load$variable, levels = levels)
 
@@ -163,7 +164,7 @@ b_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$va
   #geom_line(col = 'white') +
   geom_hline(aes(yintercept = 0)) +
   geom_point(aes(col = as.factor(month(Date))), size = 2) +
-  geom_point(aes(x = 1200, y = delta_load_simple, col = as.factor(month(Date))), size = 4)+
+  geom_point(aes(x = 1200, y = delta_load_simple, col = as.factor(month(Date, label = TRUE, abbr = TRUE))), size = 4)+
   scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') +
   scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
   theme_bw() +
