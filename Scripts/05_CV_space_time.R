@@ -186,6 +186,10 @@ table <- table %>%
 table <- table %>% 
   select(Reservoir, variable, min_time, max_time, mean_time, min_space, max_space, mean_space)
 
+mean <- table %>% 
+  group_by(Reservoir) %>% 
+  mutate(mean_space_all = mean(mean_space, na.rm = TRUE))
+
 colnames(table) <- c('Reservoir', 'Variable', 'Min Time', 'Max Time', 'Mean Time', 'Min Space', 'Max Space', 'Mean Space')
 
 write.csv(table, './Data/summary_stats_cv.csv', row.names = FALSE)
