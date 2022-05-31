@@ -6,10 +6,10 @@ library(lubridate)
 
 met <- read.csv('./Data/raw_data/met_edi.csv')
 met$DateTime <- as.POSIXct(met$DateTime)
-met <- met %>% 
+met2 <- met %>% 
   filter(met$DateTime < as.POSIXct('2019-10-05 00:00:00') & met$DateTime > as.POSIXct('2019-04-28 00:00:00'))
 
-met_daily <- met %>% 
+met_daily <- met2 %>% 
   select(DateTime, Rain_Total_mm, AirTemp_Average_C) %>% 
   group_by(DateTime) %>% 
   mutate(airtemp_avg = mean(AirTemp_Average_C, na.rm = TRUE)) %>% 
@@ -32,7 +32,7 @@ a <- ggplot(data = met_daily, aes(x = as.Date(DateTime), y = airtemp_avg)) +
   xlab('Date') +
   ylab('Air Temperature (C)')
 
-
+a
 b <- ggplot(data = met_daily, aes(x = as.Date(DateTime), y = rain_sum)) +
   geom_line(size = 0.8) +
   geom_vline(xintercept = as.numeric(dates), color = 'dodgerblue2', size = 0.8) +
@@ -42,7 +42,7 @@ b <- ggplot(data = met_daily, aes(x = as.Date(DateTime), y = rain_sum)) +
         text = element_text(size = 15)) +  
   xlab('Date') +
   ylab('Total Daily Rain (mm)')
-
+b
 ggarrange(a, b, nrow = 2)
 
 
@@ -69,6 +69,14 @@ dist$Site <- as.factor(dist$Site)
 
 # join the two
 do_dist <- left_join(do, dist)
+
+# avg dups at B50
+do_dist <- do_dist %>% 
+  group_by(Reservoir, Site, Date) %>% 
+  mutate(Temp_C = mean(Temp_C, na.rm = TRUE)) %>% 
+  mutate(DOSat = mean(DOSat, na.rm = TRUE)) %>% 
+  distinct(Reservoir, Site, Date, .keep_all = TRUE)
+  
 do_dist <- do_dist %>% 
   pivot_longer(cols = c(DOSat, Temp_C), names_to = 'variable', values_to = "value") %>% 
   select(-Depth_m)
@@ -114,3 +122,24 @@ f <- ggplot(data = do_dist[do_dist$Reservoir=='FCR',], aes(x = distance_m, y = v
 f
 siplot <- ggarrange(b, f, nrow = 2)
 ggsave('./Figures/SIFig_watertemp_DO.png', siplot)
+
+# calculate avg diff btw stream and reservoir sites
+do_dist$location <- NA
+stream_sites <- c('FCR_200', 'FCR_99', 'BVR_100', 'BVR_200')
+reservoir_sites <- c( 'BVR_20', 'BVR_30','BVR_1', 'BVR_45', 'BVR_50',
+                      'FCR_20', 'FCR_30', 'FCR_45', 'FCR_50') # site 01 is in res for BVR and in stream for FCR 
+
+for(i in 1:nrow(do_dist)){
+  if(do_dist$res_site[i] %in% reservoir_sites){
+    do_dist$location[i] <- 'Reservoir'
+  }else{
+    do_dist$location[i] <- 'Stream'
+  }
+}
+
+diff <- do_dist %>% 
+  pivot_wider(names_from = variable, values_from = value) %>% 
+  select(Reservoir, Site, location, Temp_C) %>% 
+  group_by(location, Reservoir) %>% 
+  mutate(mean_temp = mean(Temp_C, na.rm = TRUE)) 
+
