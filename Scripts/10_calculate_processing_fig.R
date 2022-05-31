@@ -146,7 +146,8 @@ f_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$va
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
-  ylab('Delta mass/sp cond (µg m3 cm / L s µs)') +
+  #ylab('Delta mass/sp cond (µg m3 cm / L s µs)') +
+  ylab(expression(Delta[Var]~(BGV~UNIT~m^3~cm/L~s~µs))) +
   xlab('Distance from upstream (m)') +
   ggtitle('Falling Creek Reservoir')
 f_sp
@@ -164,13 +165,14 @@ b_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$va
   #geom_line(col = 'white') +
   geom_hline(aes(yintercept = 0)) +
   geom_point(aes(col = as.factor(month(Date))), size = 2) +
-  geom_point(aes(x = 1200, y = delta_load_simple, col = as.factor(month(Date, label = TRUE, abbr = TRUE))), size = 4)+
+  geom_point(aes(x = 1200, y = delta_load_simple, col = as.factor(month(Date))), size = 4)+
   scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') +
   scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
-  ylab('Delta mass/sp cond (µg m3 cm / L s µs)') +
+  ylab(expression(Delta[Var]~(BGV~UNIT~m^3~cm/L~s~µs))) +
+  #ylab('Delta mass/sp cond (µg m3 cm / L s µs)') +
   xlab('Distance from upstream (m)') +
   ggtitle('Beaverdam Reservoir')
 b_sp
