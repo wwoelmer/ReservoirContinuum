@@ -83,13 +83,15 @@ inf <- ggplot(data = flow, aes(x = Date, y = Flow_cms)) +
   geom_point(aes(col = Reservoir, shape = simple_site), size = 4) +
   geom_line(data = flow[flow$Reservoir=='FCR',], aes(shape = simple_site, col = Reservoir)) +
   geom_line(data = flow[flow$Reservoir=='BVR',], aes(shape = simple_site, col = Reservoir)) +
+  facet_wrap(~Reservoir) +
   theme_bw() +
   scale_color_manual(values = r_col) +
   scale_shape_manual(values = c(15, 17, 16)) +
-  ylab('Discharge (m^3/s)') +
+  ylab(expression(Discharge~(m^3/s))) +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
-        text = element_text(size = 15)) +
+        text = element_text(size = 15),
+        axis.text.x = element_text(angle = 45)) +
   labs(shape = 'Site', color = 'Reservoir', size = NULL)
 inf
 
@@ -143,7 +145,7 @@ spc <-  ggplot(data = data, aes(x = distance_m, y = Sp_cond_uScm)) +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         text = element_text(size = 15)) +
-  ylab('Specific Conductivity (μs/cm)') +
+  ylab('Specific Conductance (μs/cm)') +
   xlab('Distance (m)') +
   labs(color = 'Month', shape = 'Site', size = "")+
   scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') 
