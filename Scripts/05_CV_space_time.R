@@ -137,7 +137,7 @@ cv <- ggplot(long_vars, aes(x = as.factor(axis), y = cv, fill = Reservoir)) +
   geom_point(position=position_jitterdodge(),alpha=0.7, size = 2, aes(color = Reservoir)) + 
   stat_compare_means(label = "p.signif", label.y.npc = 0.75, size = 4) + 
   stat_compare_means(aes(group = axis), 
-                     label = "p.signif", label.y.npc = 0.95,
+                     label = "p.format", label.y.npc = 0.95,
                      size = 4,
                      label.x.npc = 0.5) +
   scale_fill_manual(values = r_col) +
@@ -198,11 +198,20 @@ write.csv(table, './Data/summary_stats_cv.csv', row.names = FALSE)
 # compare across stoichiometric variables
 vars_stoich <-  c('CV_TNTP', 'CV_DNDP', 'CV_DPTP', 'CV_DNTN')
 stoich <- long_both[long_both$variable %in% vars_stoich,]
+levels <- c('CV_TNTP', 'CV_DNDP', 'CV_DPTP', 'CV_DNTN')
+
+labels <- c('TN:TP', 'DIN:SRP', 'SRP:TP',
+            'DIN:TN') 
+
+names(labels) <- levels
+stoich$variable <- factor(stoich$variable, levels = levels)
+
+
 
 stoich_cv <- ggplot(stoich, aes(x = as.factor(axis), y = cv, fill = Reservoir)) +
   geom_boxplot(outlier.shape = NA) +
   geom_blank(aes(y=ymax, x = as.factor(axis)))+
-  facet_wrap(~variable, scales = 'free') +
+  facet_wrap(~variable, scales = 'free', labeller = labeller(variable = labels)) +
   geom_point(position=position_jitterdodge(),alpha=0.7, size = 2, aes(color = Reservoir)) + 
   stat_compare_means(label = "p.signif", label.y.npc = 0.75, size = 4) + 
   stat_compare_means(aes(group = axis), 
