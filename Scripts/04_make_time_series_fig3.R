@@ -50,27 +50,6 @@ ggplot(range, aes(x = Date, y = range, color = Reservoir)) +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
 
-peak <- long %>% 
-  filter(distance_from_stream > 0) %>% 
-  group_by(Reservoir, variable, Date) %>% 
-  mutate(peak = which(max(value)))
-
-out <- plyr::ddply(long[long$distance_from_stream > 0,], c("Reservoir", "variable", "Date"), function(x) {
-  idx <- which(x$value == max(x$value))
-  data.frame(Site = x$Site[idx], 
-             value = x$value[idx])
-})
-
-ggplot(out)
-
-for(i in 1:length(peak_vars)){
-  sub <- long[long$variable==vars_keep[i],]
-  sub <- sub[sub$distance_from_stream > 0,]
-  for(j in 1:2){
-   sub <-  
-  }
-}
-
 ######################################################################################################################
 ### time series color by date, one for each reservoir
 
@@ -123,6 +102,77 @@ plot <- ggarrange(b, f, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'righ
 plot
 ggsave('./Figures/Fig3_timeseries.png', plot)
 
+############################################################################################################
+### stoiciometry SI figure
+# remove 07/22/2019 sampling date (replicate for 07/18/2019)
+data <- data[data$Date!='2019-07-22', ]
+
+long_stoich <- data %>%   
+  select(Site, Reservoir, Date, distance_from_stream, distance_m, TN_TP:DN_DP) %>% 
+  pivot_longer(TN_TP:DN_DP, names_to = 'variable', values_to = 'value')
+
+
+long_stoich$Month <- as.factor(month(long_stoich$Date))
+levels <- c('TN_TP', 'DN_DP', 'DP_TP', 'DN_TN')
+labels <- c('TN:TP', 'DIN:SRP', 'SRP:TP', 'DIN:TN')
+names(labels) <- levels
+long_stoich$variable <- factor(long_stoich$variable, levels = levels)
+
+# calculate mean and sd of each ratio
+summary_stoich <- long_stoich %>% 
+  filter(distance_from_stream > 0) %>% 
+  group_by(variable) %>% 
+  mutate(mean = mean(value, na.rm = TRUE)) %>% 
+  mutate(sd = sd(value, na.rm = TRUE)) %>% 
+  group_by(variable, Site, Reservoir) %>% 
+  mutate(mean_site = mean(value, na.rm = TRUE)) %>% 
+  mutate(sd_site = sd(value, na.rm = TRUE)) %>% 
+  distinct(Reservoir, Site, variable, .keep_all = TRUE)
+
+
+
+
+## FCR
+fcr <- long_stoich[long_stoich$Reservoir=='FCR' & long_stoich$distance_from_stream > 0,]
+fs <- ggplot(data = long_stoich[long_stoich$Reservoir=='FCR' & long_stoich$distance_from_stream > 0,], aes(x = distance_m, y = value, col = Month)) +
+  geom_point(size = 2) +
+  geom_smooth(aes(col = Month), se = FALSE) +
+  xlab('Distance from stream (m)') +
+  ylab('Ratio') +
+  facet_wrap(~variable, scales = "free_y", labeller = labeller(variable = labels)) + 
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  theme_bw() +
+  labs(col = 'Month') +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none") +
+  ggtitle('Falling Creek Reservoir')
+fs
+## BVR
+bvr <- long_stoich[long_stoich$Reservoir=='BVR' & long_stoich$distance_from_stream > 0 & long_stoich$variable=='DN_DP',]
+bs <- ggplot(data = long_stoich[long_stoich$Reservoir=='BVR' & long_stoich$distance_from_stream > 0,], aes(x = distance_m, y = value, col = Month)) +
+  geom_point(size = 2) +
+  geom_smooth(aes(col = Month), se = FALSE) +
+  xlab('Distance from stream (m)') +
+  ylab('Ratio') +
+  facet_wrap(~variable, scales = "free_y", labeller = labeller(variable = labels)) + 
+  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  theme_bw() +
+  labs(col = 'Month') +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none") +
+  ggtitle('Beaverdam Reservoir')
+
+bs
+plot3 <- ggarrange(bs, fs, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
+ggsave('./Figures/SIFig_stoich_timeseries.png', plot3)
+
+
+
+###################################################################################################################
+###################################################################################################################
+###################################################################################################################
 ###################################################################################################################
 ## JASM plots
 jasm_vars <- c('NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL', 'TN_ugL', 'TP_ugL', 'Chla_ugL')
@@ -274,68 +324,6 @@ chl <- ggplot(thorn, aes(x = distance_from_stream, y = chla, color = Reservoir))
 
 plot2 <- ggarrange(n, p, chl, sn, sp, ncol = 3, nrow = 2, common.legend = TRUE)
 #ggsave('./Figures/Fig7_TNTPchl_thornton.png', plot2, width = 7, height = 4.6)
-
-
-
-############################################################################################################
-### stoiciometry figure
-# remove 07/22/2019 sampling date (replicate for 07/18/2019)
-data <- data[data$Date!='2019-07-22', ]
-
-long_stoich <- data %>%   
-  select(Site, Reservoir, Date, distance_from_stream, distance_m, TN_TP:DN_DP) %>% 
-  pivot_longer(TN_TP:DN_DP, names_to = 'variable', values_to = 'value')
-
-
-long_stoich$Month <- as.factor(month(long_stoich$Date))
-levels <- c('TN_TP', 'DN_DP', 'DP_TP', 'DN_TN')
-labels <- c('TN_TP', 'DN_DP', 'DP_TP', 'DN_TN')
-names(labels) <- levels
-long_stoich$variable <- factor(long_stoich$variable, levels = levels)
-
-
-
-## FCR
-fcr <- long_stoich[long_stoich$Reservoir=='FCR' & long_stoich$distance_from_stream > 0,]
-fs <- ggplot(data = long_stoich[long_stoich$Reservoir=='FCR' & long_stoich$distance_from_stream > 0,], aes(x = distance_m, y = value, col = Month)) +
-  geom_point(size = 2) +
-  geom_smooth(aes(col = Month), se = FALSE) +
-  xlab('Distance from stream (m)') +
-  ylab('Ratio') +
-  facet_wrap(~variable, scales = "free_y") + 
-  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
-  theme_bw() +
-  labs(col = 'Month') +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        legend.position = "none") +
-  ggtitle('Falling Creek Reservoir')
-fs
-## BVR
-bvr <- long_stoich[long_stoich$Reservoir=='BVR' & long_stoich$distance_from_stream > 0 & long_stoich$variable=='DN_DP',]
-bs <- ggplot(data = long_stoich[long_stoich$Reservoir=='BVR' & long_stoich$distance_from_stream > 0,], aes(x = distance_m, y = value, col = Month)) +
-  geom_point(size = 2) +
-  geom_smooth(aes(col = Month), se = FALSE) +
-  xlab('Distance from stream (m)') +
-  ylab('Ratio') +
-  facet_wrap(~variable, scales = "free_y") + 
-  scale_color_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
-  theme_bw() +
-  labs(col = 'Month') +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        legend.position = "none") +
-  ggtitle('Beaverdam Reservoir')
-
-bs
-plot3 <- ggarrange(bs, fs, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
-ggsave('./Figures/SIFig_stoich_timeseries.png', plot3)
-
-
-
-
-
-
 
 
 
