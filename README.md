@@ -1,4 +1,5 @@
 # ReservoirContinuum
+[![DOI](https://zenodo.org/badge/395078532.svg)](https://zenodo.org/badge/latestdoi/395078532)
 
 Repository for analysis of temporal and spatial heterogeneity of biogeochemical data in Falling Creek Reservoir and Beaverdam Reservoir in Vinton, VA. This field campaign occurred monthly from April to October 2019, sampling stream inflows and outflows and numerous sites within each reservoir. 
 
