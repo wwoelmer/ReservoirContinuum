@@ -30,7 +30,7 @@ a <- ggplot(data = met_daily, aes(x = as.Date(DateTime), y = airtemp_avg)) +
         panel.grid.minor = element_blank(),
         text = element_text(size = 15)) +  
   xlab('Date') +
-  ylab('Air Temperature (C)')
+  ylab(expression("Temperature ("*~degree*C*")"))
 
 a
 b <- ggplot(data = met_daily, aes(x = as.Date(DateTime), y = rain_sum)) +
@@ -85,12 +85,18 @@ do_dist <- do_dist %>%
   filter(res_site != 'FCR_100' & res_site != 'FCR_101' & res_site != 'FCR_102' & res_site != 'FCR_1')
 
 # plot DO and temp over space
+levels <- c("DOSat", "Temp_C")
+
+labels <- c("DO % Saturation", "Temperature")
+names(labels) <- levels
+do_dist$variable <- factor(do_dist$variable, levels = levels)
+
 b <- ggplot(data = do_dist[do_dist$Reservoir=='BVR',], aes(x = distance_m, y = value, col = as.factor(month(Date)))) +
   geom_point(size = 3) +
   geom_line(aes(col = as.factor(month(Date)))) +
   xlab('Distance from stream') +
   ylab('DO (% Saturation) or Temp (°C)') +
-  facet_wrap(~variable, scales = "free") + 
+  facet_wrap(~variable, scales = "free", labeller = labeller(variable = labels)) + 
   labs(color = 'Month') +
   scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') +
   ggtitle('Beaverdam Reservoir') +
@@ -108,7 +114,7 @@ f <- ggplot(data = do_dist[do_dist$Reservoir=='FCR',], aes(x = distance_m, y = v
   geom_line(aes(col = as.factor(month(Date)))) +
   xlab('Distance from stream') +
   ylab('DO (% Saturation) or Temp (°C)') +
-  facet_wrap(~variable, scales = "free") + 
+  facet_wrap(~variable, scales = "free", labeller = labeller(variable = labels)) + 
   labs(color = 'Month') +
   scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') +
   ggtitle('Falling Creek Reservoir') +
