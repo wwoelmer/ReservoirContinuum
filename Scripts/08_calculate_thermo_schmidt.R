@@ -99,7 +99,7 @@ metrics <- metrics[order(metrics$Date),]
 
 s <- ggplot(data = metrics, aes(x = Date, y =schmidt_stability, col = Reservoir)) +
   geom_line(size = 1.4) +
-  ylab("Schmidt Stability (J/m^2)") +
+  ylab(expression(Schmidt~Stability~(J/m^2))) +
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
