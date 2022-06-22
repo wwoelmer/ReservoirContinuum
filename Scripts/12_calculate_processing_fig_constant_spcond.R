@@ -185,7 +185,7 @@ b_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$va
   ylab(expression(Delta[Var]~(BGV~UNIT~m^3~cm/L~s~µs))) +
   #ylab('Delta mass/sp cond (µg m3 cm / L s µs)') +
   xlab('Distance from upstream (m)') +
-  ggtitle('Constant SPC, Beaverdam Reservoir')
+  ggtitle('Beaverdam Reservoir')
 b_sp
 
 
