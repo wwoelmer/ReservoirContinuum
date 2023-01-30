@@ -81,7 +81,7 @@ for(j in 1:length(vars)){
     temp2 <- temp[temp$Date==dates[k],]
     for(m in 1:length(res)){
       temp3 <- temp2[temp2$Reservoir==res[m],]
-      if(temp3$Reservoir=='BVR'){
+      if(temp3$Reservoir[1]=='BVR'){
         temp3$delta_load_spatial[temp3$Site==100] <- 0
         temp3$delta_load_spatial[temp3$Site==200] <- 0
         temp3$delta_load_spatial[temp3$Site==20] <- temp3$load[temp3$Site==20 & temp3$variable==vars[j]]/temp3$value[temp3$Site==20 & temp3$variable=='Sp_cond_uScm'] - temp3$load[temp3$Site==100 & temp3$variable==vars[j]]/temp3$value[temp3$Site==100 & temp3$variable=='Sp_cond_uScm']
@@ -93,7 +93,7 @@ for(j in 1:length(vars)){
         temp3$delta_load_simple <- temp3$load[temp3$Site==50 & temp3$variable==vars[j]]/temp3$value[temp3$Site==50 & temp3$variable=='Sp_cond_uScm'] - sum(temp3$load[temp3$Site==100& temp3$variable==vars[j]]/temp3$value[temp3$Site==100 & temp3$variable=='Sp_cond_uScm'], temp3$load[temp3$Site==200 & temp3$variable==vars[j]]/temp3$value[temp3$Site==200 & temp3$variable=='Sp_cond_uScm'], na.rm = TRUE)
         
       }
-      if(temp3$Reservoir=='FCR'){
+      if(temp3$Reservoir[1]=='FCR'){
         temp3$delta_load_spatial[temp3$Site==99] <- 0
         temp3$delta_load_spatial[temp3$Site==200] <- 0
         temp3$delta_load_spatial[temp3$Site==20] <- temp3$load[temp3$Site==20 & temp3$variable==vars[j]]/temp3$value[temp3$Site==20 & temp3$variable=='Sp_cond_uScm'] - sum(temp3$load[temp3$Site==99 & temp3$variable==vars[j]]/temp3$value[temp3$Site==99 & temp3$variable=='Sp_cond_uScm'], temp3$load[temp3$Site==200 & temp3$variable==vars[j]]/temp3$value[temp3$Site==200 & temp3$variable=='Sp_cond_uScm'], na.rm = TRUE)
@@ -117,17 +117,23 @@ vars_process <- c('T', 'A', 'DOC_mgL',
                   'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
                   'Chla_ugL', 'TN_ugL', 'TP_ugL',
                   'Sp_cond_uScm')
-test_load <- test_load[test_load$variable %in% vars_process,]
+vars_gleon <- c(#'T', 'A', 'DOC_mgL', 
+                  'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
+                  'Chla_ugL', 'TN_ugL', 'TP_ugL',
+                  'Sp_cond_uScm')
+#test_load <- test_load[test_load$variable %in% vars_process,]
+test_load <- test_load[test_load$variable %in% vars_gleon,]
 
 ## set the order of hte plots
 levels <- c('TN_ugL', 'TP_ugL','Chla_ugL',
             'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL',
-            'DOC_mgL', 'T', 'A',  
+            #'DOC_mgL', 'T', 'A',  
             'Sp_cond_uScm')
 
 labels_f <- c('d) TN (μg/L)', 'e) TP (μg/L)', 'f) Chl-a (μg/L)',
               'j) NH4 (μg/L)', 'k) NO3 (μg/L)', 'l) SRP (μg/L)',
-              'p) DOC (mg/L)', 'q) T-autoch (RFU)',  'r) A-alloch (RFU)', 'Sp Cond') 
+              #'p) DOC (mg/L)', 'q) T-autoch (RFU)',  'r) A-alloch (RFU)', 
+              'Sp Cond') 
 names(labels_f) <- levels
 test_load$variable <- factor(test_load$variable, levels = levels)
 
@@ -154,7 +160,8 @@ f_sp
 
 labels_b <- c('a) TN (μg/L)', 'b) TP (μg/L)', 'c) Chl-a (μg/L)',
               'g) NH4 (μg/L)', 'h) NO3 (μg/L)', 'i) SRP (μg/L)',
-              'm) DOC (mg/L)', 'n) T-autoch (RFU)',  'o) A-alloch (RFU)', 'sp cond') 
+              #'m) DOC (mg/L)', 'n) T-autoch (RFU)',  'o) A-alloch (RFU)', 
+              'sp cond') 
 names(labels_b) <- levels
 test_load$variable <- factor(test_load$variable, levels = levels)
 
@@ -180,7 +187,7 @@ b_sp
 
 process <- ggarrange(b_sp, f_sp, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
 process
-ggsave('./Figures/Fig6_processing.png', process)
+ggsave('./Figures/Fig6_processing_GLEON.png', process)
 
 ##########################################################################################################################################
 
