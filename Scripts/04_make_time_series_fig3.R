@@ -22,6 +22,8 @@ long_data <- data %>%
 vars_keep <-  c('T', 'A', 
                 'DOC_mgL',  'Chla_ugL','TN_ugL', 'TP_ugL',
                 'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL') 
+vars_keep <-  c( 'Chla_ugL','TN_ugL', 'TP_ugL',
+                'NH4_ugL', 'NO3NO2_ugL', 'SRP_ugL') 
 
 long <- long_data[long_data$variable %in% vars_keep,]
 
