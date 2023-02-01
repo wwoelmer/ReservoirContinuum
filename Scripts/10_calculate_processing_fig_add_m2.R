@@ -76,7 +76,7 @@ long_load_2 <- long_load
 # add area of each reservoir section to dataframe
 area <- read.csv('./Data/reservoir_chunk_areas.csv')
 area <- area %>% 
-  mutate(area_km2 = Shape_Area/1000000) # convert to km2
+  mutate(area_km2 = round(Shape_Area/1000000, 3)) # convert to km2
 
 # go through loop and divided by sp cond and aerial footprint
 test_load <- NA
@@ -172,6 +172,7 @@ f_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$va
   scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') +
   scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
   theme_bw() +
+  geom_vline(aes(xintercept = 665)) +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
   #ylab('Delta mass/sp cond (µg m3 cm / L s µs)') +
@@ -200,6 +201,7 @@ b_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$va
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
+  geom_vline(aes(xintercept = 1150)) +
   ylab(expression(Delta[Var]~(BGV~UNIT~m^3~cm/L~s~µs))) +
   #ylab('Delta mass/sp cond (µg m3 cm / L s µs)') +
   xlab('Distance from upstream (m)') +
@@ -209,7 +211,7 @@ b_sp
 
 process <- ggarrange(b_sp, f_sp, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
 process
-ggsave('./Figures/Fig6_processing_GLEON.png', process)
+ggsave('./Figures/Fig6_processing.png', process)
 
 ##########################################################################################################################################
 # plot processing corrected for area of reservoir chunk
@@ -221,15 +223,18 @@ f_area <-
   geom_line(aes(col = as.factor(month(Date)))) +
   geom_hline(aes(yintercept = 0)) +
   geom_point(aes(col = as.factor(month(Date))), size = 2) +
-  geom_point(aes(x = 710, y = delta_load_spatial_area_simple, col = as.factor(month(Date))), size = 4)+
+  geom_point(aes(x = 710, y = delta_load_spatial_area_simple*3, col = as.factor(month(Date))), size = 4)+
   scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') +
   scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  scale_y_continuous(sec.axis = sec_axis(trans = ~./3, name = expression(Delta[VarWR]~(BGV~UNIT~m^3~cm/L~s~µs~km^2)))) +
+  geom_vline(aes(xintercept = 665)) +
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
-  ylab(expression(Delta[Var]~(BGV~UNIT~m^3~cm/L~s~µs~km^2))) +
+  ylab("") +
   xlab('Distance from upstream (m)') +
   ggtitle('Falling Creek Reservoir')
+f_area
 
 b_area <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$variable!='Sp_cond_uScm'  & test_load$Reservoir=='BVR',], 
        aes(x = distance_m, y = delta_load_spatial_area)) +
@@ -237,15 +242,19 @@ b_area <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$
   geom_line(aes(col = as.factor(month(Date)))) +
   geom_hline(aes(yintercept = 0)) +
   geom_point(aes(col = as.factor(month(Date))), size = 2) +
-  geom_point(aes(x = 1200, y = delta_load_spatial_area_simple, col = as.factor(month(Date))), size = 4)+
+  geom_point(aes(x = 1200, y = delta_load_spatial_area_simple*10, col = as.factor(month(Date))), size = 4)+
   scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') +
   scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  scale_y_continuous(name = expression(Delta[VarSite]~(BGV~UNIT~m^3~cm/L~s~µs~km^2)), sec.axis = sec_axis(trans = ~./10)) +
+  geom_vline(aes(xintercept = 1150)) +
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
   ylab(expression(Delta[Var]~(BGV~UNIT~m^3~cm/L~s~µs~km^2))) +
   xlab('Distance from upstream (m)') +
   ggtitle('Beaverdam Reservoir')
+b_area
+
 
 process_area <- ggarrange(b_area, f_area, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
 process_area
