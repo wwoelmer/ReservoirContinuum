@@ -92,7 +92,7 @@ for(j in 1:length(vars)){
     temp2 <- temp[temp$Date==dates[k],]
     for(m in 1:length(res)){
       temp3 <- temp2[temp2$Reservoir==res[m],]
-      if(temp3$Reservoir=='BVR'){
+      if(temp3$Reservoir[1]=='BVR'){
         temp3$delta_load_spatial[temp3$Site==100] <- 0
         temp3$delta_load_spatial[temp3$Site==200] <- 0
         temp3$delta_load_spatial[temp3$Site==20] <- temp3$load[temp3$Site==20 & temp3$variable==vars[j]]/temp3$value[temp3$Site==20 & temp3$variable=='Sp_cond_uScm'] - temp3$load[temp3$Site==100 & temp3$variable==vars[j]]/temp3$value[temp3$Site==100 & temp3$variable=='Sp_cond_uScm']
@@ -104,7 +104,7 @@ for(j in 1:length(vars)){
         temp3$delta_load_simple <- temp3$load[temp3$Site==50 & temp3$variable==vars[j]]/temp3$value[temp3$Site==50 & temp3$variable=='Sp_cond_uScm'] - sum(temp3$load[temp3$Site==100& temp3$variable==vars[j]]/temp3$value[temp3$Site==100 & temp3$variable=='Sp_cond_uScm'], temp3$load[temp3$Site==200 & temp3$variable==vars[j]]/temp3$value[temp3$Site==200 & temp3$variable=='Sp_cond_uScm'], na.rm = TRUE)
         
       }
-      if(temp3$Reservoir=='FCR'){
+      if(temp3$Reservoir[1]=='FCR'){
         temp3$delta_load_spatial[temp3$Site==99] <- 0
         temp3$delta_load_spatial[temp3$Site==200] <- 0
         temp3$delta_load_spatial[temp3$Site==20] <- temp3$load[temp3$Site==20 & temp3$variable==vars[j]]/temp3$value[temp3$Site==20 & temp3$variable=='Sp_cond_uScm'] - sum(temp3$load[temp3$Site==99 & temp3$variable==vars[j]]/temp3$value[temp3$Site==99 & temp3$variable=='Sp_cond_uScm'], temp3$load[temp3$Site==200 & temp3$variable==vars[j]]/temp3$value[temp3$Site==200 & temp3$variable=='Sp_cond_uScm'], na.rm = TRUE)
@@ -148,16 +148,18 @@ f_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$va
   geom_line(aes(col = as.factor(month(Date)))) +
   #geom_line(col = 'white') +
   geom_hline(aes(yintercept = 0)) +
-  geom_point(aes(col = as.factor(month(Date))), size = 2) +
-  geom_point(aes(x = 710, y = delta_load_simple, col = as.factor(month(Date))), size = 4)+
+  geom_point(aes(col = as.factor(month(Date)), shape = 'Site'), size = 2) +
+  geom_point(aes(x = 710, y = delta_load_simple, col = as.factor(month(Date)), shape = 'WR'), size = 4)+
   #  geom_ribbon(aes(ymin = delta_load_spatial -loq_load, ymax = delta_load_spatial + loq_load, 
   #                  col = as.factor(month(Date)), fill = as.factor(month(Date))), alpha = 0.1, linetype = 0)+
   scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') +
   scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  scale_shape_manual(values = c(19, 18), name = "Metric") +
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
   #ylab('Delta mass/sp cond (µg m3 cm / L s µs)') +
+  geom_vline(aes(xintercept = 665)) +
   ylab(expression(Delta[Var]~(BGV~UNIT~m^3~cm/L~s~µs))) +
   xlab('Distance from upstream (m)') +
   ggtitle('Falling Creek Reservoir')
@@ -175,10 +177,12 @@ b_sp <- ggplot(data = test_load[test_load$distance_from_stream >0 & test_load$va
   geom_line(aes(col = as.factor(month(Date)))) +
   #geom_line(col = 'white') +
   geom_hline(aes(yintercept = 0)) +
-  geom_point(aes(col = as.factor(month(Date))), size = 2) +
-  geom_point(aes(x = 1200, y = delta_load_simple, col = as.factor(month(Date))), size = 4)+
+  geom_point(aes(col = as.factor(month(Date)), shape = 'Size'), size = 2) +
+  geom_point(aes(x = 1200, y = delta_load_simple, col = as.factor(month(Date)), shape = 'WR'), size = 4)+
+  geom_vline(aes(xintercept = 1150)) +
   scale_color_manual(values = rev(hcl.colors(7, "Zissou 1")), name = 'Month') +
   scale_fill_manual(values = rev(hcl.colors(7, "Zissou 1"))) +
+  scale_shape_manual(values = c(19, 18), name = "Metric") +
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank()) +
@@ -191,7 +195,7 @@ b_sp
 
 process <- ggarrange(b_sp, f_sp, nrow = 1, ncol = 2, common.legend = TRUE, legend = 'right') 
 process
-ggsave('./Figures/Fig6_processing.png', process)
+ggsave('./Figures/FigS7_processing_constant_sp.png', process, scale = 1.3)
 
 ##########################################################################################################################################
 spc <- test_load[test_load$variable=='Sp_cond_uScm',]
